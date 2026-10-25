@@ -11,6 +11,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Accounts are created explicitly with rosewatch:create-user.
+        $this->call([
+            UserSeeder::class,
+            LocationSeeder::class,
+            DeviceSeeder::class,
+        ]);
     }
 }

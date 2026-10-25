@@ -43,13 +43,13 @@ class AdministrationService
                 unset($data['password']);
             }
             $user ??= new User;
-            $before = $user->only(['name', 'email', 'role', 'active', 'all_branches', 'team']);
+            $before = $user->only(['name', 'email', 'idcode', 'role', 'active', 'all_branches', 'team']);
             $user->fill($data)->save();
             $user->branches()->sync($branches);
             if (! $user->active || isset($data['password'])) {
                 $user->forceFill(['remember_token' => null])->save();
             }
-            $this->audit->record($user, 'Account saved', $reason, null, ['before' => $before, 'after' => $user->only(['name', 'email', 'role', 'active', 'all_branches', 'team'])]);
+            $this->audit->record($user, 'Account saved', $reason, null, ['before' => $before, 'after' => $user->only(['name', 'email', 'idcode', 'role', 'active', 'all_branches', 'team'])]);
         });
     }
 

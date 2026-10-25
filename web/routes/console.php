@@ -14,12 +14,12 @@ Artisan::command('rosewatch:create-user {email} {--name=} {--role=admin}', funct
 
         return 1;
     }
-    $password = $this->secret('Password (at least 12 characters)');
+    $password = $this->secret('Password (at least 8 characters)');
     $confirmation = $this->secret('Confirm password');
     $validator = Validator::make(compact('email', 'name', 'password'), [
         'email' => ['required', 'email', 'max:255', 'unique:users,email'],
         'name' => ['required', 'string', 'max:255'],
-        'password' => ['required', 'string', 'min:12', 'max:4096'],
+        'password' => ['required', 'string', 'min:8', 'max:4096'],
     ]);
     if ($validator->fails() || $password !== $confirmation) {
         foreach ($validator->errors()->all() as $error) {

@@ -23,6 +23,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'idcode',
         'password',
         'role', 'active', 'all_branches', 'team',
     ];
@@ -35,6 +36,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'keycloak_issuer',
+        'keycloak_subject',
     ];
 
     /**

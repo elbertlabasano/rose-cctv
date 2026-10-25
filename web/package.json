@@ -4,19 +4,22 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "format": "prettier --write \"resources/js/**/*.{vue,ts,css}\" \"resources/css/**/*.css\" vite.config.js",
+    "format:check": "prettier --check \"resources/js/**/*.{vue,ts,css}\" \"resources/css/**/*.css\" vite.config.js"
   },
   "dependencies": {
     "@inertiajs/vue3": "^2.0",
-    "vue": "^3.5",
-    "pinia": "^3.0"
+    "pinia": "^3.0",
+    "vue": "^3.5"
   },
   "devDependencies": {
+    "@types/node": "^22.0",
     "@vitejs/plugin-vue": "^5.2",
     "laravel-vite-plugin": "^1.2",
+    "prettier": "^3.9.10",
     "typescript": "^5.8",
     "vite": "^6.0",
-    "vue-tsc": "^2.2",
-    "@types/node": "^22.0"
+    "vue-tsc": "^2.2"
   }
 }
