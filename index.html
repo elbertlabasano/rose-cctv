@@ -1,0 +1,1725 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RoseWatch CCTV Operations</title>
+  <style>
+    :root {
+      --ink: #152b35;
+      --muted: #6e7d84;
+      --line: #dfe7e9;
+      --canvas: #f3f6f5;
+      --panel: #ffffff;
+      --nav: #102a33;
+      --nav-soft: #183943;
+      --teal: #11866f;
+      --teal-soft: #e3f5ef;
+      --red: #d74a4a;
+      --red-soft: #fceaea;
+      --amber: #d08b22;
+      --amber-soft: #fff3dc;
+      --blue: #3274c8;
+      --blue-soft: #e8f0fb;
+      --shadow: 0 10px 30px rgba(19, 47, 56, .07);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 238px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 16px;
+      color: #d7e6e8;
+      background: var(--nav);
+      display: flex;
+      flex-direction: column;
+      z-index: 20;
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 8px 26px;
+      color: white;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: #19a386;
+      box-shadow: 0 0 0 5px rgba(25, 163, 134, .13);
+    }
+
+    .brand-mark svg { width: 22px; }
+    .brand-name { font-size: 16px; font-weight: 760; letter-spacing: .01em; }
+    .brand-sub { margin-top: 2px; font-size: 10px; color: #89a7ae; text-transform: uppercase; letter-spacing: .15em; }
+
+    .nav-label {
+      margin: 8px 12px 8px;
+      color: #6f9299;
+      font-size: 10px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: .13em;
+    }
+
+    .nav-item {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 12px;
+      margin: 2px 0;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      color: #a9c0c5;
+      background: transparent;
+      text-align: left;
+      transition: .18s ease;
+    }
+
+    .nav-item svg { width: 18px; height: 18px; flex: none; }
+    .nav-item:hover { color: white; background: rgba(255,255,255,.05); }
+    .nav-item.active { color: white; background: var(--nav-soft); box-shadow: inset 3px 0 #21aa8c; }
+    .nav-badge { margin-left: auto; min-width: 22px; padding: 2px 6px; border-radius: 20px; background: #d84b4b; color: white; font-size: 10px; text-align: center; }
+
+    .sidebar-foot {
+      margin-top: auto;
+      padding: 14px 10px 0;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+
+    .health-note { display: flex; gap: 9px; align-items: center; font-size: 11px; color: #89a7ae; }
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: #32c59f; box-shadow: 0 0 0 5px rgba(50,197,159,.12); }
+
+    .main { min-width: 0; }
+
+    .topbar {
+      height: 72px;
+      padding: 0 32px;
+      background: rgba(255,255,255,.94);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 15;
+      backdrop-filter: blur(12px);
+    }
+
+    .mobile-menu { display: none; border: 0; background: transparent; color: var(--ink); }
+    .environment { display: flex; gap: 10px; align-items: center; }
+    .env-copy small { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+    .env-copy strong { font-size: 14px; }
+    .env-pill { padding: 5px 8px; border-radius: 7px; color: var(--teal); background: var(--teal-soft); font-size: 10px; font-weight: 750; letter-spacing: .04em; }
+
+    .top-actions { display: flex; align-items: center; gap: 12px; }
+    .icon-btn { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: white; color: #547078; position: relative; }
+    .icon-btn svg { width: 18px; }
+    .alert-dot { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border: 2px solid white; border-radius: 50%; background: var(--red); }
+    .user { display: flex; gap: 10px; align-items: center; padding-left: 4px; }
+    .avatar { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: #dce9e7; color: var(--nav); font-size: 12px; font-weight: 800; }
+    .user-copy strong { display: block; font-size: 12px; }
+    .user-copy span { font-size: 10px; color: var(--muted); }
+
+    .content { padding: 28px 32px 48px; max-width: 1540px; margin: 0 auto; }
+    .page { display: none; animation: rise .25s ease; }
+    .page.active { display: block; }
+    @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+    .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: clamp(23px, 2.3vw, 31px); line-height: 1.2; letter-spacing: -.035em; }
+    .eyebrow { margin-bottom: 7px; color: var(--teal); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .page-head p { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
+
+    .btn { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; color: var(--ink); background: white; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn:hover { border-color: #bfcdd0; }
+    .btn-primary { border-color: var(--teal); background: var(--teal); color: white; box-shadow: 0 7px 18px rgba(17,134,111,.2); }
+    .btn-primary:hover { background: #0d745f; border-color: #0d745f; }
+    .btn-danger { border-color: #f0caca; color: var(--red); background: var(--red-soft); }
+
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 15px; margin-bottom: 18px; }
+    .metric-card { padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
+    .metric-top { display: flex; align-items: flex-start; justify-content: space-between; }
+    .metric-label { color: var(--muted); font-size: 11px; font-weight: 650; }
+    .metric-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; }
+    .metric-icon svg { width: 17px; height: 17px; }
+    .metric-icon.green { color: var(--teal); background: var(--teal-soft); }
+    .metric-icon.red { color: var(--red); background: var(--red-soft); }
+    .metric-icon.amber { color: var(--amber); background: var(--amber-soft); }
+    .metric-icon.blue { color: var(--blue); background: var(--blue-soft); }
+    .metric-value { margin: 9px 0 5px; font-size: 29px; font-weight: 780; letter-spacing: -.04em; }
+    .metric-foot { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; }
+    .up { color: var(--teal); font-weight: 750; }
+    .down { color: var(--red); font-weight: 750; }
+
+    .layout-two { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(310px,.75fr); gap: 18px; margin-bottom: 18px; }
+    .card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+    .card-head { min-height: 61px; padding: 16px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .card-title { margin: 0; font-size: 14px; font-weight: 760; }
+    .card-subtitle { margin: 3px 0 0; color: var(--muted); font-size: 10px; }
+    .text-btn { border: 0; background: transparent; color: var(--teal); font-size: 11px; font-weight: 750; }
+
+    .availability { padding: 19px 18px 16px; }
+    .chart-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 14px; }
+    .chart-number { font-size: 28px; font-weight: 790; letter-spacing: -.04em; }
+    .chart-number small { font-size: 13px; color: var(--muted); font-weight: 600; }
+    .legend { display: flex; gap: 13px; color: var(--muted); font-size: 9px; }
+    .legend span { display: flex; align-items: center; gap: 5px; }
+    .legend i { width: 7px; height: 7px; border-radius: 2px; background: var(--teal); }
+    .legend i.red { background: var(--red); }
+    .bar-chart { height: 155px; padding-top: 10px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-end; justify-content: space-around; gap: 12px; background: repeating-linear-gradient(to bottom, transparent 0, transparent 36px, #edf1f2 37px); }
+    .bar-group { height: 100%; flex: 1; max-width: 48px; display: flex; align-items: flex-end; gap: 3px; position: relative; }
+    .bar { width: 50%; border-radius: 5px 5px 0 0; background: var(--teal); transition: height .3s; }
+    .bar.outage { background: #f0b0b0; }
+    .day-labels { padding-top: 9px; display: flex; justify-content: space-around; color: var(--muted); font-size: 9px; }
+
+    .attention-list { padding: 4px 18px 8px; }
+    .attention-row { padding: 13px 0; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid #edf1f2; }
+    .attention-row:last-child { border: 0; }
+    .camera-thumb { width: 45px; height: 39px; border-radius: 9px; background: #dce4e4; display: grid; place-items: center; color: #7c9095; flex: none; position: relative; overflow: hidden; }
+    .camera-thumb svg { width: 19px; }
+    .camera-thumb::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, transparent 0 8px, rgba(255,255,255,.25) 8px 10px); }
+    .attention-copy { min-width: 0; flex: 1; }
+    .attention-copy strong { display: block; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .attention-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+
+    .status { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 99px; font-size: 9px; font-weight: 750; white-space: nowrap; }
+    .status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .status.live { color: var(--teal); background: var(--teal-soft); }
+    .status.down { color: var(--red); background: var(--red-soft); }
+    .status.degraded { color: var(--amber); background: var(--amber-soft); }
+    .status.maintenance { color: var(--blue); background: var(--blue-soft); }
+    .status.unknown { color: #75848a; background: #edf1f2; }
+
+    .branch-table { width: 100%; border-collapse: collapse; }
+    .branch-table th { padding: 11px 18px; color: var(--muted); background: #fafcfc; font-size: 9px; text-align: left; text-transform: uppercase; letter-spacing: .08em; }
+    .branch-table td { padding: 14px 18px; border-top: 1px solid #edf1f2; font-size: 11px; vertical-align: middle; }
+    .branch-name { display: flex; align-items: center; gap: 10px; }
+    .branch-icon { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 9px; background: #edf4f3; color: #52727a; }
+    .branch-icon svg { width: 15px; }
+    .branch-name strong { display: block; font-size: 11px; }
+    .branch-name span { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; }
+    .health-bar { width: 96px; height: 5px; border-radius: 5px; background: #edf1f2; overflow: hidden; }
+    .health-bar span { display: block; height: 100%; border-radius: inherit; background: var(--teal); }
+
+    .toolbar { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .search { min-width: 230px; flex: 1; position: relative; }
+    .search svg { width: 15px; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    .search input, .select { width: 100%; height: 38px; border: 1px solid var(--line); border-radius: 9px; outline: none; background: white; color: var(--ink); font-size: 11px; }
+    .search input { padding: 0 12px 0 35px; }
+    .select { width: auto; min-width: 128px; padding: 0 30px 0 11px; }
+    .search input:focus, .select:focus, .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(17,134,111,.09); }
+
+    .camera-grid { padding: 16px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+    .camera-card { border: 1px solid var(--line); border-radius: 13px; overflow: hidden; background: white; transition: .18s ease; }
+    .camera-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .camera-info { padding: 15px; }
+    .camera-title { display: flex; justify-content: space-between; gap: 9px; align-items: flex-start; }
+    .camera-title strong { font-size: 11px; }
+    .camera-title span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+    .status-summary { margin-top: 14px; padding: 13px; display: flex; align-items: center; gap: 12px; border: 1px solid #dce9e5; border-radius: 11px; background: #f5fbf8; }
+    .status-summary.down-summary { border-color: #f3d6d6; background: #fff8f8; }
+    .status-summary.degraded-summary { border-color: #f2dfbd; background: #fffaf1; }
+    .state-mark { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 50%; color: var(--teal); background: var(--teal-soft); }
+    .state-mark::before { content: ""; width: 11px; height: 11px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 5px rgba(17,134,111,.12); }
+    .down-summary .state-mark { color: var(--red); background: var(--red-soft); }
+    .down-summary .state-mark::before { box-shadow: 0 0 0 5px rgba(215,74,74,.12); }
+    .degraded-summary .state-mark { color: var(--amber); background: var(--amber-soft); }
+    .degraded-summary .state-mark::before { box-shadow: 0 0 0 5px rgba(208,139,34,.12); }
+    .state-copy { min-width: 0; }
+    .state-copy small { display: block; color: var(--muted); font-size: 8px; font-weight: 750; text-transform: uppercase; letter-spacing: .07em; }
+    .state-copy strong { display: block; margin-top: 2px; font-size: 14px; }
+    .state-copy span { display: block; margin-top: 2px; color: var(--muted); font-size: 8px; }
+    .camera-stats { margin-top: 11px; padding-top: 10px; border-top: 1px solid #edf1f2; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .camera-stats small { display: block; color: var(--muted); font-size: 8px; text-transform: uppercase; letter-spacing: .06em; }
+    .camera-stats b { display: block; margin-top: 3px; font-size: 10px; }
+    .daily-history { margin-top: 11px; padding-top: 10px; border-top: 1px solid #edf1f2; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .daily-history small { color: var(--muted); font-size: 8px; text-transform: uppercase; letter-spacing: .06em; }
+    .day-dots { display: flex; gap: 5px; }
+    .day-dots i { width: 10px; height: 10px; border-radius: 3px; background: var(--teal); }
+    .day-dots i.bad { background: var(--red); }
+    .day-dots i.warn { background: var(--amber); }
+    .day-dots i.partial { background: linear-gradient(135deg, var(--teal) 0 50%, var(--red) 50%); }
+
+    .matrix-summary { padding: 13px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap; background: #fafcfc; }
+    .matrix-summary strong { font-size: 11px; }
+    .matrix-summary p { margin: 3px 0 0; color: var(--muted); font-size: 9px; }
+    .matrix-legend { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; color: var(--muted); font-size: 9px; }
+    .matrix-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .matrix-legend i { width: 9px; height: 9px; border-radius: 3px; }
+    .matrix-scroll { max-height: 570px; overflow: auto; }
+    .status-matrix { min-width: 2090px; width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+    .status-matrix th, .status-matrix td { height: 43px; padding: 0 7px; border-right: 1px solid #e3e9ea; border-bottom: 1px solid #e3e9ea; text-align: center; font-size: 9px; }
+    .status-matrix thead th { position: sticky; top: 0; z-index: 4; height: 36px; color: #53696f; background: #f6f9f9; font-weight: 760; }
+    .status-matrix thead tr:first-child th { top: 0; height: 38px; }
+    .status-matrix thead tr:nth-child(2) th { top: 38px; }
+    .status-matrix .month-heading { color: var(--ink); background: #edf4f3; font-size: 11px; letter-spacing: .02em; }
+    .status-matrix .camera-column { position: sticky; left: 0; z-index: 3; width: 230px; min-width: 230px; padding: 0 13px; background: white; text-align: left; box-shadow: 1px 0 0 #d9e2e3; }
+    .status-matrix thead .camera-column { z-index: 7; background: #f6f9f9; }
+    .status-matrix tbody tr:hover td { background-color: #fbfdfd; }
+    .status-matrix tbody tr:hover .camera-column { background: #f5faf8; }
+    .matrix-camera { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+    .matrix-camera strong { display: block; color: var(--ink); font-size: 10px; }
+    .matrix-camera span { display: block; margin-top: 2px; color: var(--muted); font-size: 8px; }
+    .day-column { width: 76px; min-width: 76px; }
+    .day-column.today { color: var(--teal); background: #e8f5f1 !important; }
+    .matrix-cell { font-weight: 720; transition: filter .15s; }
+    .matrix-cell:hover { filter: brightness(.96); }
+    .matrix-cell.live { color: #08745f; background: #e5f5ef; }
+    .matrix-cell.down { color: #b93636; background: #fbe8e8; }
+    .matrix-cell.degraded { color: #9a6414; background: #fff2d8; }
+    .matrix-cell.maintenance { color: #2f67a7; background: #e8f0fb; }
+    .matrix-cell.nodata { color: #929fa3; background: #f2f4f4; }
+    .uptime-column { width: 82px; min-width: 82px; font-weight: 780; color: var(--ink); background: white; }
+    .matrix-empty { padding: 30px !important; color: var(--muted); text-align: center !important; }
+
+    .process-shell { display: grid; grid-template-columns: minmax(0,1.8fr) minmax(280px,.65fr); gap: 18px; }
+    .process-card { padding: 24px; }
+    .flow-intro { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; margin-bottom: 27px; }
+    .flow-intro p { margin: 5px 0 0; max-width: 580px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .flow-label { padding: 6px 9px; border-radius: 7px; color: var(--teal); background: var(--teal-soft); font-size: 9px; font-weight: 800; white-space: nowrap; }
+    .flow { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding: 4px 0 24px; }
+    .flow-node { min-width: 142px; flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 16px 13px; background: white; position: relative; transition: .18s ease; }
+    .flow-node:hover, .flow-node.selected { border-color: var(--teal); box-shadow: 0 8px 22px rgba(17,134,111,.11); }
+    .flow-node button { position: absolute; inset: 0; border: 0; background: transparent; border-radius: inherit; }
+    .node-number { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 8px; background: #edf4f3; color: var(--teal); font-size: 9px; font-weight: 800; }
+    .node-title { margin-top: 11px; font-size: 11px; font-weight: 760; }
+    .node-note { margin-top: 5px; color: var(--muted); font-size: 9px; line-height: 1.45; }
+    .flow-arrow { min-width: 28px; display: grid; place-items: center; color: #a9b8bc; }
+    .flow-arrow svg { width: 15px; }
+    .flow-branch { margin: 0 0 23px; padding: 14px 16px; border-radius: 11px; border: 1px dashed #c9d8da; background: #f8fbfa; display: flex; gap: 12px; align-items: flex-start; }
+    .flow-branch svg { width: 18px; flex: none; color: var(--amber); }
+    .flow-branch strong { display: block; font-size: 10px; }
+    .flow-branch span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.5; }
+    .detail-panel { padding: 17px; border: 1px solid var(--line); border-radius: 12px; background: #f9fbfb; }
+    .detail-panel h3 { margin: 0 0 11px; font-size: 12px; }
+    .detail-list { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .detail-item { padding: 11px; border-radius: 9px; background: white; border: 1px solid #e7edee; }
+    .detail-item small { color: var(--muted); font-size: 8px; text-transform: uppercase; letter-spacing: .07em; }
+    .detail-item strong { display: block; margin-top: 4px; font-size: 10px; }
+
+    .rule-list { padding: 4px 17px 15px; }
+    .rule { padding: 13px 0; border-bottom: 1px solid #edf1f2; }
+    .rule:last-child { border: 0; }
+    .rule-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .rule strong { font-size: 10px; }
+    .rule p { margin: 5px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+    .toggle { width: 29px; height: 17px; border: 0; border-radius: 15px; background: #cbd6d8; position: relative; flex: none; }
+    .toggle::after { content: ""; position: absolute; width: 11px; height: 11px; left: 3px; top: 3px; border-radius: 50%; background: white; transition: .15s; }
+    .toggle.on { background: var(--teal); }
+    .toggle.on::after { transform: translateX(12px); }
+
+    .incident-layout { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(330px,.85fr); gap: 18px; }
+    .incident-list { padding: 0; }
+    .incident-row { width: 100%; padding: 15px 17px; border: 0; border-bottom: 1px solid #edf1f2; background: white; text-align: left; display: grid; grid-template-columns: 8px minmax(0,1fr) auto; gap: 11px; align-items: center; }
+    .incident-row:hover, .incident-row.active { background: #f8fbfa; }
+    .severity { width: 8px; height: 40px; border-radius: 8px; background: var(--amber); }
+    .severity.critical { background: var(--red); }
+    .severity.low { background: var(--blue); }
+    .incident-main strong { font-size: 11px; }
+    .incident-main span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
+    .incident-side { text-align: right; }
+    .incident-side span { display: block; margin-bottom: 5px; color: var(--muted); font-size: 8px; }
+
+    .incident-detail { min-height: 510px; }
+    .detail-body { padding: 18px; }
+    .incident-heading { display: flex; justify-content: space-between; gap: 14px; }
+    .incident-heading h2 { margin: 0; font-size: 17px; }
+    .incident-heading p { margin: 5px 0 0; color: var(--muted); font-size: 9px; }
+    .info-grid { margin: 17px 0; padding: 13px; border-radius: 10px; background: #f6f9f8; display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .info-grid small { display: block; color: var(--muted); font-size: 8px; text-transform: uppercase; letter-spacing: .06em; }
+    .info-grid strong { display: block; margin-top: 4px; font-size: 10px; }
+    .section-label { margin: 17px 0 10px; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    .timeline { position: relative; }
+    .timeline::before { content: ""; position: absolute; left: 6px; top: 7px; bottom: 10px; width: 1px; background: #d8e1e2; }
+    .timeline-item { padding: 0 0 16px 25px; position: relative; }
+    .timeline-item::before { content: ""; position: absolute; left: 2px; top: 3px; width: 9px; height: 9px; border: 2px solid white; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 1px #b7c8ca; }
+    .timeline-item strong { display: block; font-size: 10px; }
+    .timeline-item p { margin: 4px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+    .timeline-item time { display: block; margin-top: 4px; color: #93a2a6; font-size: 8px; }
+    .detail-actions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 3px; }
+    .incident-detail .detail-actions { margin-bottom: 18px; }
+    .incident-list .search { min-width: 100%; }
+    .incident-items { max-height: 660px; overflow: auto; }
+    .incident-empty { padding: 28px 18px; color: var(--muted); font-size: 12px; text-align: center; }
+    .resolution-card { margin: 18px 0; padding: 15px; border: 1px solid #c6e7dc; border-radius: 12px; background: #f1faf6; }
+    .resolution-card h3 { margin: 0 0 8px; font-size: 13px; color: var(--teal); }
+    .resolution-card dl { margin: 0; }
+    .resolution-card dt { margin: 12px 0 4px; font-size: 9px; font-weight: 750; color: var(--muted); text-transform: uppercase; }
+    .resolution-card dd { margin: 0; font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+    .timeline-item p { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .log-change { margin-top: 6px; display: inline-block; padding: 3px 6px; background: #edf4f3; border-radius: 5px; font-size: 9px; }
+    .workflow-check { display: flex; gap: 9px; align-items: flex-start; font-size: 11px; line-height: 1.6; }
+    .workflow-check input { margin-top: 3px; accent-color: var(--teal); }
+    .workflow-group { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .workflow-group[hidden] { display: none; }
+    .proof-upload { padding: 14px; border: 1px dashed #a8cbbf; border-radius: 11px; background: #f6fbf9; }
+    .proof-upload input[type="file"] { padding: 9px; background: white; }
+    .proof-upload p { margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+    .proof-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+    .proof-card { min-width: 0; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+    .proof-thumb { width: 100%; height: 88px; padding: 0; border: 0; border-radius: 6px; overflow: hidden; background: #edf3f2; display: grid; place-items: center; color: var(--blue); font-size: 20px; font-weight: 800; }
+    .proof-thumb img { width: 100%; height: 100%; object-fit: contain; }
+    .proof-card strong { display: block; margin: 8px 0 3px; font-size: 10px; overflow-wrap: anywhere; }
+    .proof-card small { color: var(--muted); font-size: 9px; }
+    .proof-actions { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; margin-top: 8px; }
+    .proof-actions a, .proof-actions button { padding: 0; border: 0; background: transparent; font-size: 10px; font-weight: 700; color: var(--teal); text-decoration: none; }
+    .proof-actions button[data-proof-remove] { color: var(--red); }
+    .proof-viewer { z-index: 60; }
+    .proof-viewer .modal { width: min(900px, 100%); }
+    .proof-viewer img { display: block; max-width: 100%; max-height: 64vh; margin: 0 auto; object-fit: contain; }
+    .proof-viewer iframe { width: 100%; height: 60vh; border: 1px solid var(--line); border-radius: 8px; }
+    .proof-viewer p { font-size: 11px; color: var(--muted); }
+    .incident-detail .info-grid strong { overflow-wrap: anywhere; }
+    @media (max-width: 600px) { .workflow-group { grid-template-columns: 1fr; } }
+
+    .device-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(290px, .8fr); gap: 18px; align-items: start; }
+    .device-table-wrap { overflow: auto; }
+    .device-table { width: 100%; min-width: 650px; border-collapse: collapse; }
+    .device-table th { padding: 12px 14px; text-align: left; font-size: 9px; color: var(--muted); background: #fafcfc; text-transform: uppercase; letter-spacing: .06em; }
+    .device-table td { padding: 14px; border-top: 1px solid var(--line); font-size: 10px; }
+    .device-table strong { display: block; font-size: 11px; }
+    .device-table small { display: block; margin-top: 4px; font-size: 9px; color: var(--muted); }
+    .device-table tr.selected td { background: #f0f8f5; }
+    .device-link { padding: 0; border: 0; background: transparent; color: var(--teal); text-align: left; font-weight: 750; }
+    .device-link:hover { text-decoration: underline; }
+    .device-description { margin: 10px 0 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
+    .asset-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0; }
+    .asset-fields dt { margin-bottom: 4px; font-size: 9px; color: var(--muted); }
+    .asset-fields dd { margin: 0; font-size: 11px; overflow-wrap: anywhere; }
+    .device-related { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 10px; }
+    .device-related small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+    .device-demo-note { margin: 0 0 18px; font-size: 11px; color: var(--muted); line-height: 1.6; }
+    .device-form-note { margin: 0; padding: 10px; background: #f3f8f6; border-radius: 8px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+    .form-error { color: var(--red); font-size: 11px; margin: 12px 0 0; }
+    .device-form-group { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .device-form-group[hidden] { display: none; }
+    .device-audit { padding: 10px 0; border-top: 1px solid var(--line); font-size: 10px; line-height: 1.6; }
+    .device-audit p { margin: 4px 0; overflow-wrap: anywhere; color: var(--muted); }
+    .device-audit time { color: var(--muted); font-size: 9px; }
+    .device-modal .modal { width: min(720px, 100%); }
+    button:focus-visible { outline: 3px solid #65b7a6; outline-offset: 3px; }
+    @media (max-width: 1200px) { .device-layout { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) { .device-form-group { grid-template-columns: 1fr; } }
+
+    .user-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, .8fr); gap: 18px; align-items: start; }
+    .user-person { display: flex; align-items: center; gap: 9px; }
+    .user-person .avatar { width: 32px; height: 32px; flex: none; }
+    .role-tag { display: inline-block; padding: 5px 7px; border-radius: 6px; background: #edf2f6; color: #426276; font-size: 9px; font-weight: 750; }
+    .user-fieldset { grid-column: 1 / -1; margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+    .user-fieldset legend { padding: 0 5px; color: #53696f; font-size: 10px; font-weight: 750; }
+    .user-checkboxes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .user-checkboxes label { display: flex; align-items: center; gap: 7px; color: var(--ink); font-size: 11px; }
+    .user-checkboxes input { accent-color: var(--teal); }
+    .user-fieldset[hidden] { display: none; }
+    .user-role-help { margin: 0; padding: 12px; border: 1px solid #d7e9e2; border-radius: 9px; background: #f3faf7; font-size: 11px; color: #44645b; line-height: 1.6; }
+    .user-permission { display: flex; gap: 8px; align-items: flex-start; margin: 9px 0; color: #4c666e; font-size: 11px; line-height: 1.5; }
+    .user-permission::before { content: '✓'; color: var(--teal); font-weight: 800; }
+    .user-permission-table { min-width: 720px; }
+    .user-permission-table th:not(:first-child), .user-permission-table td:not(:first-child) { text-align: center; }
+    .user-log-changes { margin: 6px 0 0; padding-left: 15px; font-size: 10px; color: var(--muted); }
+    .user-log-changes li { margin: 4px 0; overflow-wrap: anywhere; }
+    @media (max-width: 1200px) { .user-layout { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) { .user-checkboxes { grid-template-columns: 1fr; } }
+
+    .reminder-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+    .reminder-card { padding: 18px; }
+    .reminder-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; margin-bottom: 14px; }
+    .reminder-icon svg { width: 18px; }
+    .reminder-card h3 { margin: 0; font-size: 13px; }
+    .reminder-card p { min-height: 43px; margin: 7px 0 14px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .schedule { padding-top: 12px; border-top: 1px solid #edf1f2; display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 9px; }
+    .schedule strong { color: var(--ink); }
+
+    .feedback-loop { padding: 24px; }
+    .loop { display: grid; grid-template-columns: repeat(5,1fr); align-items: center; margin-top: 22px; }
+    .loop-step { text-align: center; position: relative; }
+    .loop-step:not(:last-child)::after { content: "→"; position: absolute; right: -7px; top: 15px; color: #9bafb4; }
+    .loop-icon { width: 42px; height: 42px; margin: 0 auto 10px; display: grid; place-items: center; border-radius: 50%; color: var(--teal); background: var(--teal-soft); font-size: 12px; font-weight: 800; }
+    .loop-step strong { display: block; font-size: 10px; }
+    .loop-step span { display: block; margin-top: 4px; color: var(--muted); font-size: 8px; line-height: 1.4; }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 50; padding: 20px; display: none; place-items: center; background: rgba(7,24,29,.58); backdrop-filter: blur(3px); }
+    .modal-backdrop.open { display: grid; }
+    .modal { width: min(600px,100%); max-height: calc(100vh - 40px); overflow-y: auto; border-radius: 17px; background: white; box-shadow: 0 28px 80px rgba(0,0,0,.25); animation: modalIn .2s ease; }
+    @keyframes modalIn { from { transform: translateY(8px) scale(.98); opacity: 0; } }
+    .modal-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 15px; align-items: center; }
+    .modal-head h2 { margin: 0; font-size: 16px; }
+    .close-btn { width: 30px; height: 30px; border: 0; border-radius: 8px; background: #f0f4f4; color: var(--muted); font-size: 19px; }
+    .modal-body { padding: 20px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field.full { grid-column: 1/-1; }
+    .field label { display: block; margin-bottom: 6px; color: #53696f; font-size: 9px; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; }
+    .field input, .field textarea, .field select { width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 10px 11px; color: var(--ink); background: white; outline: none; font-size: 11px; }
+    .field textarea { min-height: 85px; resize: vertical; }
+    .modal-foot { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 9px; background: #fafcfc; }
+
+    .toast { position: fixed; right: 24px; bottom: 24px; z-index: 70; padding: 13px 16px; border-radius: 10px; color: white; background: var(--nav); box-shadow: 0 15px 35px rgba(0,0,0,.2); font-size: 11px; transform: translateY(20px); opacity: 0; pointer-events: none; transition: .25s; }
+    .toast.show { transform: none; opacity: 1; }
+
+    @media (max-width: 1100px) {
+      .camera-grid { grid-template-columns: repeat(2,1fr); }
+      .process-shell, .incident-layout { grid-template-columns: 1fr; }
+      .reminder-grid { grid-template-columns: repeat(2,1fr); }
+    }
+
+    @media (max-width: 850px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar { position: fixed; left: -255px; width: 238px; transition: left .2s ease; box-shadow: 18px 0 40px rgba(0,0,0,.2); }
+      .sidebar.open { left: 0; }
+      .mobile-menu { display: block; }
+      .topbar { padding: 0 19px; }
+      .content { padding: 22px 19px 40px; }
+      .metrics { grid-template-columns: repeat(2,1fr); }
+      .layout-two { grid-template-columns: 1fr; }
+      .user-copy { display: none; }
+      .loop { grid-template-columns: 1fr; gap: 21px; }
+      .loop-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -19px; transform: translateX(50%); }
+    }
+
+    @media (max-width: 600px) {
+      .page-head { flex-direction: column; }
+      .page-head .btn { width: 100%; }
+      .metrics { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .metric-card { padding: 14px; }
+      .metric-value { font-size: 24px; }
+      .camera-grid, .reminder-grid { grid-template-columns: 1fr; }
+      .branch-table th:nth-child(3), .branch-table td:nth-child(3), .branch-table th:nth-child(5), .branch-table td:nth-child(5) { display: none; }
+      .branch-table th, .branch-table td { padding-left: 12px; padding-right: 12px; }
+      .detail-list, .info-grid { grid-template-columns: 1fr 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .top-actions .icon-btn:first-child { display: none; }
+      .environment .env-pill { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8.5h11.5a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H4z"/><path d="m18.5 10 3-1.5v7l-3-1.5M8 15.5V19m-3 0h6"/></svg>
+        </div>
+        <div><div class="brand-name">RoseWatch</div><div class="brand-sub">CCTV Operations</div></div>
+      </div>
+
+      <div class="nav-label">Workspace</div>
+      <nav aria-label="Primary navigation">
+        <button class="nav-item active" data-page="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Overview</button>
+        <button class="nav-item" data-page="cameras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8.5h11.5a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H4z"/><path d="m18.5 10 3-1.5v7l-3-1.5M8 15.5V19m-3 0h6"/></svg>Cameras <span class="nav-badge">3</span></button>
+        <button class="nav-item" data-page="process"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 12h4a4 4 0 0 0 4-4V5m-4 7a4 4 0 0 1 4 4v3"/></svg>Process flow</button>
+        <button class="nav-item" data-page="incidents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 2.8 19h18.4z"/><path d="M12 9v4m0 3h.01"/></svg>Incidents <span class="nav-badge">4</span></button>
+        <button class="nav-item" data-page="reminders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>Reminders</button>
+      </nav>
+
+      <div class="nav-label" style="margin-top:20px">Administration</div>
+      <nav aria-label="Administration navigation">
+        <button class="nav-item" data-page="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m2-16a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 4v2"/></svg>User management</button>
+        <button class="nav-item" data-page="devices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01M12 7h5m-5 10h5"/></svg>Device management</button>
+        <button class="nav-item" data-page="process"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V9m6 11V4m6 16v-7m4 7H2"/></svg>Reports</button>
+        <button class="nav-item" data-page="cameras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.14.37.35.7.6 1 .3.28.68.42 1.1.4h.1v4h-.1a1.7 1.7 0 0 0-1.7.6z"/></svg>Configuration</button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="health-note"><span class="pulse"></span><div><strong style="display:block;color:#c6d8db">Monitoring engine online</strong><span>Last sync 18 seconds ago</span></div></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="environment">
+          <button class="mobile-menu" id="menuButton" aria-label="Open menu">☰</button>
+          <div class="env-copy"><small>Environment</small><strong>Philippines Operations</strong></div>
+          <span class="env-pill">PRODUCTION</span>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
+          <button class="icon-btn" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="alert-dot"></span></button>
+          <div class="user"><div class="avatar" id="sessionUserAvatar">AM</div><div class="user-copy"><strong id="sessionUserName">Alex Mendoza</strong><span id="sessionUserRole">Administrator · demo account</span></div></div>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="page active" id="page-overview">
+          <div class="page-head">
+            <div><div class="eyebrow">Live operations</div><h1>Good afternoon, Alex.</h1><p>Thursday, 22 October 2026 · Status refreshed less than a minute ago</p></div>
+            <button class="btn btn-primary open-incident"><span>＋</span>Create incident</button>
+          </div>
+
+          <div class="metrics">
+            <article class="metric-card"><div class="metric-top"><span class="metric-label">Cameras online</span><span class="metric-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8.5h11.5a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H4z"/><path d="m18.5 10 3-1.5v7l-3-1.5"/></svg></span></div><div class="metric-value">124 <small style="font-size:13px;color:var(--muted)">/ 130</small></div><div class="metric-foot"><span class="up">95.4%</span><span>fleet availability</span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-label">Cameras down</span><span class="metric-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 4 16 16M5 8.5h10.5a3 3 0 0 1 3 3v1c0 .6-.18 1.17-.5 1.65M4 11v4.5h11.5M18.5 10l3-1.5v7L20 14.75"/></svg></span></div><div class="metric-value">3</div><div class="metric-foot"><span class="down">1 critical</span><span>requires attention</span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-label">Open incidents</span><span class="metric-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2.8 19h18.4z"/><path d="M12 9v4m0 3h.01"/></svg></span></div><div class="metric-value" id="dashboardIncidentCount">4</div><div class="metric-foot"><span class="down" id="dashboardIncidentOverdue">1 overdue</span><span>against SLA</span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-label">Avg. resolution time</span><span class="metric-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span></div><div class="metric-value">2h 18m</div><div class="metric-foot"><span class="up">↓ 14 min</span><span>versus last week</span></div></article>
+          </div>
+
+          <div class="layout-two">
+            <article class="card">
+              <div class="card-head"><div><h2 class="card-title">Seven-day availability</h2><p class="card-subtitle">Combined uptime across all active cameras</p></div><button class="text-btn" data-go="process">View daily report →</button></div>
+              <div class="availability"><div class="chart-head"><div><div class="chart-number">97.8<small>% average</small></div></div><div class="legend"><span><i></i>Online</span><span><i class="red"></i>Downtime</span></div></div><div class="bar-chart" aria-label="Seven day uptime chart"><div class="bar-group"><span class="bar" style="height:94%"></span><span class="bar outage" style="height:6%"></span></div><div class="bar-group"><span class="bar" style="height:98%"></span><span class="bar outage" style="height:2%"></span></div><div class="bar-group"><span class="bar" style="height:96%"></span><span class="bar outage" style="height:4%"></span></div><div class="bar-group"><span class="bar" style="height:99%"></span><span class="bar outage" style="height:1%"></span></div><div class="bar-group"><span class="bar" style="height:92%"></span><span class="bar outage" style="height:8%"></span></div><div class="bar-group"><span class="bar" style="height:97%"></span><span class="bar outage" style="height:3%"></span></div><div class="bar-group"><span class="bar" style="height:95%"></span><span class="bar outage" style="height:5%"></span></div></div><div class="day-labels"><span>Fri 16</span><span>Sat 17</span><span>Sun 18</span><span>Mon 19</span><span>Tue 20</span><span>Wed 21</span><span>Today</span></div></div>
+            </article>
+
+            <article class="card">
+              <div class="card-head"><div><h2 class="card-title">Needs attention</h2><p class="card-subtitle">Prioritized by downtime and severity</p></div><button class="text-btn" data-go="cameras">View all</button></div>
+              <div class="attention-list">
+                <div class="attention-row"><div class="camera-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8.5h11.5a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H4z"/><path d="m18.5 10 3-1.5v7l-3-1.5"/></svg></div><div class="attention-copy"><strong>CAM-MKT-012 · Loading Bay</strong><span>Makati Central · Down for 2d 4h</span></div><span class="status down">Down</span></div>
+                <div class="attention-row"><div class="camera-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8.5h11.5a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H4z"/><path d="m18.5 10 3-1.5v7l-3-1.5"/></svg></div><div class="attention-copy"><strong>CAM-QC-004 · Main Entrance</strong><span>Quezon City · Down for 3h 41m</span></div><span class="status down">Down</span></div>
+                <div class="attention-row"><div class="camera-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8.5h11.5a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H4z"/><path d="m18.5 10 3-1.5v7l-3-1.5"/></svg></div><div class="attention-copy"><strong>CAM-CBU-021 · Stock Room</strong><span>Cebu IT Park · Unstable stream</span></div><span class="status degraded">Degraded</span></div>
+              </div>
+            </article>
+          </div>
+
+          <article class="card">
+            <div class="card-head"><div><h2 class="card-title">Branch health</h2><p class="card-subtitle">Operational status by location</p></div><button class="text-btn" data-go="cameras">Manage branches →</button></div>
+            <div style="overflow-x:auto"><table class="branch-table"><thead><tr><th>Branch</th><th>Camera status</th><th>Availability</th><th>Open incidents</th><th>Last check</th></tr></thead><tbody><tr><td><div class="branch-name"><span class="branch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V7l8-4 8 4v14M8 11h2m4 0h2M8 15h2m4 0h2M9 21v-3h6v3"/></svg></span><div><strong>Makati Central</strong><span>NCR · 26 cameras</span></div></div></td><td><span class="status degraded">24 live · 2 down</span></td><td><div class="health-bar"><span style="width:92%"></span></div></td><td>2</td><td>18 sec ago</td></tr><tr><td><div class="branch-name"><span class="branch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V7l8-4 8 4v14M8 11h2m4 0h2M8 15h2m4 0h2M9 21v-3h6v3"/></svg></span><div><strong>Quezon City</strong><span>NCR · 32 cameras</span></div></div></td><td><span class="status degraded">31 live · 1 down</span></td><td><div class="health-bar"><span style="width:97%"></span></div></td><td>1</td><td>22 sec ago</td></tr><tr><td><div class="branch-name"><span class="branch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V7l8-4 8 4v14M8 11h2m4 0h2M8 15h2m4 0h2M9 21v-3h6v3"/></svg></span><div><strong>Cebu IT Park</strong><span>Visayas · 22 cameras</span></div></div></td><td><span class="status live">21 live · 1 degraded</span></td><td><div class="health-bar"><span style="width:99%"></span></div></td><td>1</td><td>15 sec ago</td></tr><tr><td><div class="branch-name"><span class="branch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V7l8-4 8 4v14M8 11h2m4 0h2M8 15h2m4 0h2M9 21v-3h6v3"/></svg></span><div><strong>Davao Downtown</strong><span>Mindanao · 18 cameras</span></div></div></td><td><span class="status live">18 live</span></td><td><div class="health-bar"><span style="width:100%"></span></div></td><td>0</td><td>12 sec ago</td></tr></tbody></table></div>
+          </article>
+        </section>
+
+        <section class="page" id="page-cameras">
+          <div class="page-head"><div><div class="eyebrow">Daily status register</div><h1>Camera status by day</h1><p>Review each camera's daily operational state without opening a video feed</p></div><button class="btn">↓ Export CSV</button></div>
+          <article class="card">
+            <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="cameraSearch" type="search" placeholder="Search camera, branch or location"></div><select class="select" id="branchFilter" aria-label="Filter by branch"><option value="all">All branches</option><option>Makati Central</option><option>Quezon City</option><option>Cebu IT Park</option><option>Davao Downtown</option></select><select class="select" id="statusFilter" aria-label="Filter by current status"><option value="all">All current statuses</option><option value="live">Live</option><option value="down">Down</option><option value="degraded">Degraded</option><option value="maintenance">Maintenance</option></select><select class="select" aria-label="Select month"><option>October 2026</option><option>September 2026</option><option>August 2026</option></select></div>
+            <div class="matrix-summary"><div><strong>October 2026 status sheet</strong><p>One daily result per camera · through 22 October</p></div><div class="matrix-legend"><span><i style="background:var(--teal)"></i>Live</span><span><i style="background:var(--red)"></i>Down</span><span><i style="background:var(--amber)"></i>Degraded</span><span><i style="background:var(--blue)"></i>Maintenance</span><span><i style="background:#c9d1d3"></i>No data</span></div></div>
+            <div class="matrix-scroll" id="matrixScroll"><table class="status-matrix" id="statusMatrix" aria-label="Daily camera status matrix"><thead id="statusMatrixHead"></thead><tbody id="statusMatrixBody"></tbody></table></div>
+          </article>
+        </section>
+
+        <section class="page" id="page-users">
+          <div class="page-head"><div><div class="eyebrow">People & access</div><h1>User management</h1><p>Manage user profiles, roles, branch assignments, and account status</p></div><button class="btn btn-primary" id="addUserButton">＋ Add user</button></div>
+          <p class="device-demo-note" id="userStorageNote">Demo configuration · user records are saved in this browser. Sign-in, email invitations, and server access enforcement are not connected.</p>
+          <div class="metrics" id="userMetrics"></div>
+          <div class="user-layout">
+            <article class="card">
+              <div class="card-head"><div><h2 class="card-title">User directory</h2><p class="card-subtitle" id="userResultCount"></p></div></div>
+              <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="userSearch" type="search" aria-label="Search users" placeholder="Search name, email, or team"></div><select class="select" id="userRoleFilter" aria-label="Filter by role"><option value="all">All roles</option></select><select class="select" id="userStatusFilter" aria-label="Filter by account status"><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select><select class="select" id="userBranchFilter" aria-label="Filter by branch access"><option value="all">All branches</option></select></div>
+              <div class="device-table-wrap"><table class="device-table"><thead><tr><th scope="col">User</th><th scope="col">Role / team</th><th scope="col">Branch access</th><th scope="col">Status</th></tr></thead><tbody id="userTableBody"></tbody></table></div>
+            </article>
+            <article class="card" id="userDetail" aria-label="Selected user profile"></article>
+          </div>
+          <article class="card" style="margin-top:18px"><div class="card-head"><div><h2 class="card-title">Role permissions</h2><p class="card-subtitle">Intended access for each role, within assigned branches and environments</p></div></div><div class="device-table-wrap"><table class="device-table user-permission-table" id="userPermissionTable" aria-label="Role permission reference"></table></div></article>
+        </section>
+
+        <section class="page" id="page-devices">
+          <div class="page-head"><div><div class="eyebrow">Equipment register</div><h1>Device management</h1><p>Recorders, cameras, network equipment, storage, and power devices by branch</p></div><button class="btn btn-primary" id="addDeviceButton">＋ Add device</button></div>
+          <p class="device-demo-note" id="deviceStorageNote">Demo inventory · changes are saved in this browser. Status is recorded manually; live device checks are not connected.</p>
+          <div class="metrics" id="deviceMetrics"></div>
+          <div class="device-layout">
+            <article class="card">
+              <div class="card-head"><div><h2 class="card-title">Device inventory</h2><p class="card-subtitle" id="deviceResultCount"></p></div></div>
+              <div class="toolbar">
+                <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="deviceSearch" type="search" placeholder="Search ID, name, model, serial, IP" aria-label="Search devices"></div>
+                <select class="select" id="deviceBranchFilter" aria-label="Device branch"><option value="all">All branches</option></select>
+                <select class="select" id="deviceTypeFilter" aria-label="Device type"><option value="all">All device types</option></select>
+                <select class="select" id="deviceStatusFilter" aria-label="Device status"><option value="all">All statuses</option><option value="live">Online</option><option value="down">Down</option><option value="degraded">Degraded</option><option value="maintenance">Maintenance</option><option value="unknown">Unknown</option></select>
+              </div>
+              <div class="device-table-wrap"><table class="device-table"><thead><tr><th scope="col">Device</th><th scope="col">Type / branch</th><th scope="col">Status</th><th scope="col">Connected to</th></tr></thead><tbody id="deviceTableBody"></tbody></table></div>
+            </article>
+            <article class="card" id="deviceDetail" aria-label="Selected device details"></article>
+          </div>
+        </section>
+
+        <section class="page" id="page-process">
+          <div class="page-head"><div><div class="eyebrow">Operating model</div><h1>Monitoring process flow</h1><p>From automated detection to verified resolution and prevention</p></div><button class="btn">Export workflow</button></div>
+          <div class="process-shell">
+            <article class="card process-card">
+              <div class="flow-intro"><div><h2 class="card-title">Camera health & incident lifecycle</h2><p>The monitoring engine checks every camera on a 60-second cycle. Select a stage below to see its owner, SLA, and system output.</p></div><span class="flow-label">AUTOMATED + HUMAN REVIEW</span></div>
+              <div class="flow" id="processFlow">
+                <div class="flow-node selected" data-step="detect"><button aria-label="View detection details"></button><span class="node-number">01</span><div class="node-title">Detect</div><div class="node-note">Heartbeat, network and device health check</div></div><span class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></span>
+                <div class="flow-node" data-step="validate"><button aria-label="View validation details"></button><span class="node-number">02</span><div class="node-title">Validate</div><div class="node-note">Grace period filters brief interruptions</div></div><span class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></span>
+                <div class="flow-node" data-step="incident"><button aria-label="View incident details"></button><span class="node-number">03</span><div class="node-title">Create incident</div><div class="node-note">Classify severity and start SLA timer</div></div><span class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></span>
+                <div class="flow-node" data-step="action"><button aria-label="View action details"></button><span class="node-number">04</span><div class="node-title">Act & log</div><div class="node-note">Assign owner and record remediation</div></div><span class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></span>
+                <div class="flow-node" data-step="verify"><button aria-label="View verification details"></button><span class="node-number">05</span><div class="node-title">Verify</div><div class="node-note">Confirm stable service before closure</div></div>
+              </div>
+              <div class="flow-branch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9a4 4 0 0 0-4 4v9m-4-4 4 4 4-4"/></svg><div><strong>Automatic feedback loop</strong><span>If the same camera fails within the 24-hour verification window, reopen the incident, preserve the full action history, and escalate it as a repeat fault.</span></div></div>
+              <div class="detail-panel"><h3 id="detailTitle">01 · Detect camera state</h3><div class="detail-list"><div class="detail-item"><small>Owner</small><strong id="detailOwner">Monitoring engine</strong></div><div class="detail-item"><small>Target</small><strong id="detailSla">Every 60 seconds</strong></div><div class="detail-item"><small>Output</small><strong id="detailOutput">Health event</strong></div></div></div>
+            </article>
+            <aside class="card">
+              <div class="card-head"><div><h2 class="card-title">Automation rules</h2><p class="card-subtitle">Production environment</p></div></div>
+              <div class="rule-list"><div class="rule"><div class="rule-top"><strong>Downtime grace period</strong><button class="toggle on" aria-label="Toggle downtime grace period"></button></div><p>Wait 3 consecutive failed checks before marking a camera down.</p></div><div class="rule"><div class="rule-top"><strong>Automatic incident creation</strong><button class="toggle on" aria-label="Toggle incident creation"></button></div><p>Create a high-priority incident after five minutes of confirmed downtime.</p></div><div class="rule"><div class="rule-top"><strong>Repeat-fault escalation</strong><button class="toggle on" aria-label="Toggle repeat fault escalation"></button></div><p>Escalate when the same camera fails twice within seven days.</p></div><div class="rule"><div class="rule-top"><strong>Auto-close after recovery</strong><button class="toggle" aria-label="Toggle auto close"></button></div><p>Disabled: a responsible person must verify critical incident resolution.</p></div></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="page" id="page-incidents">
+          <div class="page-head"><div><div class="eyebrow">Response center</div><h1>Incident management</h1><p id="incidentSummary">Action logs, resolutions, and verification history</p></div><button class="btn btn-primary open-incident">＋ Create incident</button></div>
+          <p class="device-demo-note" id="incidentStorageNote">Demo workspace · incident reports and history are saved in this browser.</p>
+          <div class="metrics" id="incidentMetrics"></div>
+          <div class="incident-layout">
+            <article class="card incident-list"><div class="card-head"><div><h2 class="card-title">Incident register</h2><p class="card-subtitle" id="incidentResultCount">Ordered by severity, then oldest first</p></div></div>
+              <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" id="incidentSearch" aria-label="Search incidents" placeholder="Search incident, device, branch, or assignee"></div><select class="select" id="incidentStatusFilter" aria-label="Filter incidents by status"><option value="active">Active incidents</option><option value="resolved">Resolved / awaiting verification</option><option value="closed">Verified / closed</option><option value="all">All incidents</option></select><select class="select" id="incidentPriorityFilter" aria-label="Filter incidents by priority"><option value="all">All priorities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+              <div class="incident-items" id="incidentItems"></div>
+            </article>
+
+            <article class="card incident-detail" id="incidentDetail" aria-label="Selected incident details"></article>
+          </div>
+        </section>
+
+        <section class="page" id="page-reminders">
+          <div class="page-head"><div><div class="eyebrow">Notifications</div><h1>Reminders & feedback</h1><p>Make ownership visible and verify that every fix actually lasts</p></div><button class="btn">Notification settings</button></div>
+          <div class="reminder-grid">
+            <article class="card reminder-card"><span class="reminder-icon" style="color:var(--teal);background:var(--teal-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4zM8 3v4m8-4v4M4 9h16"/></svg></span><h3>Daily operations digest</h3><p>Branch health, cameras down, aging incidents, and yesterday's availability.</p><div class="schedule"><span>Every day</span><strong>08:00 SGT</strong></div></article>
+            <article class="card reminder-card"><span class="reminder-icon" style="color:var(--red);background:var(--red-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><h3>SLA risk escalation</h3><p>Notify the owner and supervisor before a response or resolution target is breached.</p><div class="schedule"><span>Before breach</span><strong>30 minutes</strong></div></article>
+            <article class="card reminder-card"><span class="reminder-icon" style="color:var(--amber);background:var(--amber-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9M12 7v5l3 2M18 3v5h-5"/></svg></span><h3>Stale action reminder</h3><p>Prompt the assignee when an open incident has no progress update.</p><div class="schedule"><span>No activity for</span><strong>4 hours</strong></div></article>
+          </div>
+          <article class="card feedback-loop" style="margin-top:18px"><div><h2 class="card-title">Resolution feedback loop</h2><p class="card-subtitle">The incident is not complete until the service is stable and confirmed</p></div><div class="loop"><div class="loop-step"><span class="loop-icon">1</span><strong>Resolve</strong><span>Record cause and corrective action</span></div><div class="loop-step"><span class="loop-icon">2</span><strong>Observe</strong><span>Monitor recovery for 24 hours</span></div><div class="loop-step"><span class="loop-icon">3</span><strong>Verify</strong><span>Branch owner confirms service</span></div><div class="loop-step"><span class="loop-icon">4</span><strong>Learn</strong><span>Tag root cause and trend</span></div><div class="loop-step"><span class="loop-icon">5</span><strong>Prevent</strong><span>Create preventive action when repeated</span></div></div></article>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="incidentModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal"><div class="modal-head"><div><h2 id="modalTitle">Create incident report</h2><div class="card-subtitle">Document a new camera or infrastructure issue</div></div><button class="close-btn" data-close aria-label="Close">×</button></div><form id="incidentForm"><div class="modal-body"><div class="form-grid"><div class="field"><label for="modalBranch">Branch</label><select id="modalBranch" required><option value="">Select branch</option><option>Makati Central</option><option>Quezon City</option><option>Cebu IT Park</option><option>Davao Downtown</option></select></div><div class="field"><label for="modalCamera">Camera / device</label><select id="modalCamera" required><option value="">Select device</option><option>CAM-MKT-012 · Loading Bay</option><option>CAM-QC-004 · Main Entrance</option><option>CAM-CBU-021 · Stock Room</option></select></div><div class="field"><label for="modalPriority">Priority</label><select id="modalPriority"><option>Medium</option><option>High</option><option>Critical</option><option>Low</option></select></div><div class="field"><label for="modalCategory">Category</label><select id="modalCategory"><option>Camera offline</option><option>Unstable video</option><option>Network fault</option><option>Power issue</option><option>Storage issue</option></select></div><div class="field full"><label for="modalSummary">Incident summary</label><input id="modalSummary" required placeholder="Briefly describe the issue"></div><div class="field full"><label for="modalDetails">Details / initial observation</label><textarea id="modalDetails" placeholder="Add relevant symptoms, actions already taken, or other context"></textarea></div><div class="field"><label for="modalAssignee">Assign to</label><select id="modalAssignee"><option>CCTV Operations</option><option>Network Support</option><option>Branch Facilities</option><option>Security Vendor</option></select></div><div class="field"><label for="modalEnvironment">Environment</label><select id="modalEnvironment"><option>Production</option><option>Staging / Test</option></select></div></div></div><div class="modal-foot"><button type="button" class="btn" data-close>Cancel</button><button type="submit" class="btn btn-primary">Create incident</button></div></form></div>
+  </div>
+  <div class="modal-backdrop" id="incidentWorkflowModal" role="dialog" aria-modal="true" aria-labelledby="workflowTitle">
+    <div class="modal">
+      <div class="modal-head"><div><h2 id="workflowTitle">Add action log</h2><p class="card-subtitle" id="workflowContext"></p></div><button type="button" class="close-btn" data-workflow-close aria-label="Close action form">×</button></div>
+      <form id="incidentWorkflowForm"><div class="modal-body"><div class="form-grid">
+        <div class="workflow-group" id="actionLogFields">
+          <div class="field"><label for="actionLogType">Action type</label><select id="actionLogType"><option>Investigation</option><option>Troubleshooting</option><option>Repair / replacement</option><option>Escalation</option><option>Follow-up</option><option>Note</option></select></div>
+          <div class="field"><label for="actionLogStatus">Incident status</label><select id="actionLogStatus"><option value="open">Open</option><option value="assigned">Assigned</option><option value="in_progress">In progress</option><option value="on_hold">On hold</option></select></div>
+          <div class="field full"><label for="actionLogAssignee">Assigned team</label><select id="actionLogAssignee"><option>CCTV Operations</option><option>Network Support</option><option>Branch Facilities</option><option>Security Vendor</option></select></div>
+        </div>
+        <div class="workflow-group" id="resolutionFields" hidden>
+          <div class="field"><label for="resolutionCause">Root cause *</label><select id="resolutionCause" required><option value="">Select root cause</option><option>Network / connectivity</option><option>Power supply</option><option>Camera hardware</option><option>Recorder hardware</option><option>Storage / HDD</option><option>Cabling / connector</option><option>Configuration</option><option>Other / undetermined</option></select></div>
+          <div class="field"><label for="resolutionRestoredAt">Service restored at *</label><input type="datetime-local" id="resolutionRestoredAt" required step="1"><small class="card-subtitle">Philippine time (UTC+08:00)</small></div>
+          <div class="field full"><label for="resolutionPrevention">Preventive action / follow-up</label><textarea id="resolutionPrevention" maxlength="2000" placeholder="What should be done to prevent a repeat?"></textarea></div>
+        </div>
+        <div class="field full"><label for="workflowNotes" id="workflowNotesLabel">Action taken / findings *</label><textarea id="workflowNotes" required maxlength="4000" placeholder="Describe what was done and what you found"></textarea></div>
+        <div class="field full"><label for="workflowReference">Evidence / reference (optional)</label><input id="workflowReference" maxlength="500" placeholder="Ticket number, work order, or evidence reference"></div>
+        <div class="field full proof-upload">
+          <label for="workflowProofFiles">Attach proof</label>
+          <input id="workflowProofFiles" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" aria-describedby="proofUploadHelp">
+          <p id="proofUploadHelp">Attach photos, screenshots, or PDF documents supporting this action or resolution. Up to 3 files, 1 MB each, 2 MB combined per entry. Files are saved in this browser with the incident.</p>
+          <p id="proofUploadStatus" role="status" aria-live="polite">No proof selected.</p>
+          <div class="proof-grid" id="workflowProofList"></div>
+        </div>
+        <div class="field full" id="workflowCheckGroup" hidden><label class="workflow-check" style="text-transform:none;letter-spacing:normal;font-weight:500"><input type="checkbox" id="workflowConfirmed"><span id="workflowCheckLabel">I have confirmed that service is restored.</span></label></div>
+      </div><p class="device-form-note" style="margin-top:14px" id="workflowHelp">This entry records your name and time in the incident history.</p><p class="form-error" id="workflowError" role="alert" hidden></p></div><div class="modal-foot"><button type="button" class="btn" data-workflow-close>Cancel</button><button type="submit" class="btn btn-primary" id="workflowSave">Save action log</button></div></form>
+    </div>
+  </div>
+  <div class="modal-backdrop proof-viewer" id="proofViewerModal" role="dialog" aria-modal="true" aria-labelledby="proofViewerTitle">
+    <div class="modal"><div class="modal-head"><div><h2 id="proofViewerTitle">Proof attachment</h2><p class="card-subtitle" id="proofViewerMeta"></p></div><button type="button" class="close-btn" id="proofViewerClose" aria-label="Close proof preview">×</button></div><div class="modal-body" id="proofViewerBody"></div><div class="modal-foot"><a class="btn btn-primary" id="proofViewerDownload" download>Download proof</a></div></div>
+  </div>
+  <div class="modal-backdrop device-modal" id="deviceModal" role="dialog" aria-modal="true" aria-labelledby="deviceModalTitle">
+    <div class="modal">
+      <div class="modal-head"><div><h2 id="deviceModalTitle">Add device</h2><p class="card-subtitle">Register equipment and its connections</p></div><button type="button" class="close-btn" data-device-close aria-label="Close device form">×</button></div>
+      <form id="deviceForm">
+        <div class="modal-body"><div class="form-grid">
+          <div class="field"><label for="deviceAssetId">Asset ID *</label><input id="deviceAssetId" required maxlength="50" placeholder="DVR-MKT-001" pattern="[A-Za-z0-9_-]+" title="Use letters, numbers, hyphens or underscores"></div>
+          <div class="field"><label for="deviceName">Device name *</label><input id="deviceName" required maxlength="100" placeholder="Ground floor recorder"></div>
+          <div class="field"><label for="deviceType">Device type *</label><select id="deviceType" required></select></div>
+          <div class="field"><label for="deviceBranch">Branch *</label><select id="deviceBranch" required></select></div>
+          <div class="field"><label for="deviceEnvironment">Environment</label><select id="deviceEnvironment"><option>Production</option><option>Staging / Test</option></select></div>
+          <div class="field"><label for="deviceLocation">Location</label><input id="deviceLocation" maxlength="100" placeholder="Security office / rack 1"></div>
+          <div class="field"><label for="deviceBrand">Brand</label><input id="deviceBrand" maxlength="60" placeholder="Manufacturer"></div>
+          <div class="field"><label for="deviceModel">Model</label><input id="deviceModel" maxlength="80" placeholder="Model number"></div>
+          <div class="field"><label for="deviceSerial">Serial number</label><input id="deviceSerial" maxlength="80"></div>
+          <div class="field"><label for="deviceIp">IPv4 address (optional)</label><input id="deviceIp" maxlength="15" placeholder="192.168.10.20"><small class="card-subtitle">Leave blank for analog cameras and passive equipment.</small></div>
+          <div class="field"><label for="deviceStatus">Current status *</label><select id="deviceStatus"><option value="unknown">Unknown</option><option value="live">Online</option><option value="down">Down</option><option value="degraded">Degraded</option><option value="maintenance">Maintenance</option></select></div>
+          <div class="field"><label for="deviceOwner">Responsible team</label><input id="deviceOwner" maxlength="100" placeholder="CCTV Operations"></div>
+          <div class="field"><label for="deviceParent">Connected to</label><select id="deviceParent"><option value="">Standalone / not assigned</option></select></div>
+          <div class="field"><label for="deviceChannel">Recorder channel (optional)</label><input id="deviceChannel" type="number" min="1" max="256" step="1"><small class="card-subtitle">For cameras connected to a DVR or NVR.</small></div>
+          <div class="device-form-group" id="recorderFields" hidden>
+            <div class="field"><label for="deviceChannels">Recorder channel capacity *</label><input id="deviceChannels" type="number" min="1" max="256" step="1" value="16"></div>
+            <div class="field"><label for="deviceStorage">Installed storage (TB)</label><input id="deviceStorage" type="number" min="0" max="10000" step="0.1" value="4"></div>
+            <div class="field full"><label for="deviceDiskHealth">Recorder storage health</label><select id="deviceDiskHealth"><option>Unknown</option><option>Healthy</option><option>Warning</option><option>Failed</option></select></div>
+          </div>
+          <div class="field"><label for="deviceInstalled">Installation date</label><input id="deviceInstalled" type="date"></div>
+          <div class="field"><label for="deviceWarranty">Warranty ends</label><input id="deviceWarranty" type="date"></div>
+          <div class="field full"><label for="deviceNotes">Asset notes</label><textarea id="deviceNotes" maxlength="1000" placeholder="Maintenance instructions, vendor contact, or equipment notes"></textarea></div>
+          <div class="field full"><label for="deviceReason">Reason / action taken *</label><textarea id="deviceReason" required maxlength="1000" placeholder="Explain this registration or change, including any status update"></textarea></div>
+          <p class="device-form-note field full">Saving records the current status, your name, time, and reason in the device action log. Linked equipment is shown for reference; its status must be checked separately.</p>
+        </div><p id="deviceFormError" class="form-error" role="alert" hidden></p></div>
+        <div class="modal-foot"><button type="button" class="btn" data-device-close>Cancel</button><button type="submit" class="btn btn-primary">Save device</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="modal-backdrop device-modal" id="userModal" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+    <div class="modal"><div class="modal-head"><div><h2 id="userModalTitle">Add user</h2><p class="card-subtitle">User profile and access assignments</p></div><button type="button" class="close-btn" data-user-close aria-label="Close user form">×</button></div>
+      <form id="userForm"><div class="modal-body"><div class="form-grid">
+        <div class="field"><label for="userName">Full name *</label><input id="userName" required maxlength="100" autocomplete="name" placeholder="Full name"></div>
+        <div class="field"><label for="userEmail">Email address *</label><input id="userEmail" type="email" required maxlength="254" autocomplete="email" placeholder="name@example.com"></div>
+        <div class="field"><label for="userRole">Role *</label><select id="userRole" required></select></div>
+        <div class="field"><label for="userTeam">Team *</label><select id="userTeam" required><option>Administration</option><option>CCTV Operations</option><option>Network Support</option><option>Branch Facilities</option><option>Security Vendor</option></select></div>
+        <p class="user-role-help field full" id="userRoleHelp"></p>
+        <div class="field"><label for="userStatus">Account status *</label><select id="userStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+        <div class="field"><label for="userScope">Branch access *</label><select id="userScope"><option value="all">All branches</option><option value="selected">Selected branches</option></select></div>
+        <fieldset class="user-fieldset" id="userBranchGroup" hidden><legend>Assigned branches *</legend><div class="user-checkboxes" id="userBranchChoices"></div></fieldset>
+        <fieldset class="user-fieldset"><legend>Assigned environments *</legend><div class="user-checkboxes"><label><input type="checkbox" id="userEnvironmentProduction" value="Production">Production</label><label><input type="checkbox" id="userEnvironmentTest" value="Staging / Test">Staging / Test</label></div></fieldset>
+        <div class="field full"><label for="userChangeReason">Reason for this change *</label><textarea id="userChangeReason" required maxlength="1000" placeholder="Record why this user is being added, updated, activated, or deactivated"></textarea></div>
+      </div><p class="device-form-note" style="margin-top:14px" id="userFormHelp">Saving records your name, time, and changes in this user's history. User sign-in is not connected in this mockup.</p><p class="form-error" id="userFormError" role="alert" hidden></p></div><div class="modal-foot"><button type="button" class="btn" data-user-close>Cancel</button><button type="submit" class="btn btn-primary">Save user</button></div></form>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status">Incident created successfully.</div>
+
+  <script>
+    const navItems = document.querySelectorAll('.nav-item[data-page]');
+    const pages = document.querySelectorAll('.page');
+    const sidebar = document.getElementById('sidebar');
+
+    function showPage(name) {
+      pages.forEach(page => page.classList.toggle('active', page.id === `page-${name}`));
+      navItems.forEach(item => item.classList.toggle('active', item.dataset.page === name));
+      sidebar.classList.remove('open');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    navItems.forEach(item => item.addEventListener('click', () => showPage(item.dataset.page)));
+    document.querySelectorAll('[data-go]').forEach(item => item.addEventListener('click', () => showPage(item.dataset.go)));
+    document.getElementById('menuButton').addEventListener('click', () => sidebar.classList.toggle('open'));
+
+    const cameraSearch = document.getElementById('cameraSearch');
+    const branchFilter = document.getElementById('branchFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const liveDays = count => Array(count).fill('live');
+    const cameraRows = [
+      { id: 'CAM-MKT-001', name: 'Main Entrance', branch: 'Makati Central', current: 'live', uptime: '99.8%', days: liveDays(22) },
+      { id: 'CAM-MKT-012', name: 'Loading Bay', branch: 'Makati Central', current: 'down', uptime: '91.2%', days: [...liveDays(19), 'degraded', 'down', 'down'] },
+      { id: 'CAM-QC-018', name: 'Cashier Area', branch: 'Quezon City', current: 'live', uptime: '100%', days: liveDays(22) },
+      { id: 'CAM-QC-004', name: 'Main Entrance', branch: 'Quezon City', current: 'down', uptime: '98.7%', days: [...liveDays(21), 'down'] },
+      { id: 'CAM-CBU-021', name: 'Stock Room', branch: 'Cebu IT Park', current: 'degraded', uptime: '99.1%', days: [...liveDays(21), 'degraded'] },
+      { id: 'CAM-CBU-006', name: 'Rear Exit', branch: 'Cebu IT Park', current: 'live', uptime: '99.4%', days: [...liveDays(7), 'maintenance', 'maintenance', ...liveDays(13)] },
+      { id: 'CAM-DVO-003', name: 'Parking Area', branch: 'Davao Downtown', current: 'live', uptime: '99.7%', days: [...liveDays(12), 'degraded', ...liveDays(9)] },
+      { id: 'CAM-DVO-011', name: 'Stock Room', branch: 'Davao Downtown', current: 'maintenance', uptime: '96.3%', days: [...liveDays(18), 'maintenance', 'maintenance', 'maintenance', 'maintenance'] }
+    ];
+    const statusLabels = { live: 'Live', down: 'Down', degraded: 'Degraded', maintenance: 'Maint.', nodata: '—' };
+
+    function renderStatusMatrix() {
+      const dates = Array.from({ length: 22 }, (_, index) => index + 1);
+      document.getElementById('statusMatrixHead').innerHTML = `<tr><th class="camera-column" rowspan="2">Camera / branch</th><th class="month-heading" colspan="${dates.length}">October 2026</th><th class="uptime-column" rowspan="2">Uptime</th></tr><tr>${dates.map(day => `<th class="day-column ${day === 22 ? 'today' : ''}">${day}</th>`).join('')}</tr>`;
+      document.getElementById('statusMatrixBody').innerHTML = cameraRows.map(camera => {
+        const cells = camera.days.map((state, index) => `<td class="matrix-cell ${state}" data-camera="${camera.id}" data-day="${index + 1}" data-state="${state}" title="${camera.id} · Oct ${index + 1}: ${statusLabels[state]}">${statusLabels[state]}</td>`).join('');
+        return `<tr class="status-row" data-search="${camera.id.toLowerCase()} ${camera.name.toLowerCase()} ${camera.branch.toLowerCase()}" data-branch="${camera.branch}" data-status="${camera.current}"><td class="camera-column"><div class="matrix-camera"><div><strong>${camera.id} · ${camera.name}</strong><span>${camera.branch}</span></div><span class="status ${camera.current}">${statusLabels[camera.current]}</span></div></td>${cells}<td class="uptime-column">${camera.uptime}</td></tr>`;
+      }).join('');
+      document.querySelectorAll('.matrix-cell').forEach(cell => cell.addEventListener('click', () => showToast(`${cell.dataset.camera} ·  ${cell.dataset.day} October: ${statusLabels[cell.dataset.state]}`)));
+      filterCameras();
+    }
+
+    function filterCameras() {
+      const term = cameraSearch.value.trim().toLowerCase();
+      let visible = 0;
+      document.querySelectorAll('.status-row').forEach(row => {
+        const searchMatch = row.dataset.search.includes(term);
+        const branchMatch = branchFilter.value === 'all' || row.dataset.branch === branchFilter.value;
+        const statusMatch = statusFilter.value === 'all' || row.dataset.status === statusFilter.value;
+        const show = searchMatch && branchMatch && statusMatch;
+        row.style.display = show ? '' : 'none';
+        if (show) visible += 1;
+      });
+      const existing = document.getElementById('matrixEmpty');
+      if (existing) existing.remove();
+      if (!visible) document.getElementById('statusMatrixBody').insertAdjacentHTML('beforeend', '<tr id="matrixEmpty"><td class="matrix-empty" colspan="24">No cameras match the selected filters.</td></tr>');
+    }
+    [cameraSearch, branchFilter, statusFilter].forEach(control => control.addEventListener('input', filterCameras));
+    renderStatusMatrix();
+
+    const stepDetails = {
+      detect: ['01 · Detect camera state', 'Monitoring engine', 'Every 60 seconds', 'Health event'],
+      validate: ['02 · Validate the outage', 'Monitoring engine', '3 failed checks', 'Confirmed state change'],
+      incident: ['03 · Create & classify incident', 'CCTV Operations', 'Within 5 minutes', 'Assigned incident + SLA'],
+      action: ['04 · Act and maintain log', 'Support owner', 'Based on severity', 'Auditable action history'],
+      verify: ['05 · Verify & close', 'Branch owner', '24-hour observation', 'Verified resolution']
+    };
+    document.querySelectorAll('.flow-node').forEach(node => node.addEventListener('click', () => {
+      document.querySelectorAll('.flow-node').forEach(item => item.classList.remove('selected'));
+      node.classList.add('selected');
+      const details = stepDetails[node.dataset.step];
+      document.getElementById('detailTitle').textContent = details[0];
+      document.getElementById('detailOwner').textContent = details[1];
+      document.getElementById('detailSla').textContent = details[2];
+      document.getElementById('detailOutput').textContent = details[3];
+    }));
+
+    document.querySelectorAll('.toggle').forEach(toggle => toggle.addEventListener('click', () => toggle.classList.toggle('on')));
+
+    const modal = document.getElementById('incidentModal');
+
+    const toast = document.getElementById('toast');
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      window.setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    // Browser-only equipment register for the interactive mockup.
+    const deviceTypes = ['DVR', 'NVR', 'IP Camera', 'Analog Camera', 'PoE Switch', 'Router', 'UPS', 'HDD / Storage', 'Power Supply', 'Other'];
+    const deviceBranches = ['Makati Central', 'Quezon City', 'Cebu IT Park', 'Davao Downtown'];
+    const deviceStates = { live: 'Online', down: 'Down', degraded: 'Degraded', maintenance: 'Maintenance', unknown: 'Unknown' };
+    const deviceStorageKey = 'rosewatch-device-register-v1';
+    const isRecorder = device => device && ['DVR', 'NVR'].includes(device.type);
+    const isCamera = device => device && ['IP Camera', 'Analog Camera'].includes(device.type);
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    const deviceDefaults = { environment: 'Production', location: '', brand: '', model: '', serial: '', ip: '', owner: 'CCTV Operations', channel: '', channels: '', storage: '', diskHealth: 'Unknown', installed: '', warranty: '', notes: '', logs: [] };
+    const sampleEquipment = [
+      { id: 'RTR-MKT-01', name: 'Branch gateway', type: 'Router', branch: 'Makati Central', status: 'live', parent: '', ip: '192.168.10.1', location: 'Server rack', brand: 'Sample vendor', model: 'Business router' },
+      { id: 'SW-MKT-01', name: 'Security PoE switch', type: 'PoE Switch', branch: 'Makati Central', status: 'live', parent: 'RTR-MKT-01', ip: '192.168.10.2', location: 'Server rack', model: '24-port PoE switch' },
+      { id: 'NVR-MKT-02', name: 'Main building recorder', type: 'NVR', branch: 'Makati Central', status: 'degraded', parent: 'SW-MKT-01', ip: '192.168.10.20', location: 'Security office', channels: 32, storage: 8, diskHealth: 'Warning', model: '32-channel NVR', serial: 'DEMO-NVR-1002', installed: '2025-06-01', warranty: '2028-06-01', notes: 'Storage usage above threshold. Review retention settings. Sample asset.' },
+      { id: 'DVR-MKT-01', name: 'Legacy perimeter recorder', type: 'DVR', branch: 'Makati Central', status: 'live', parent: 'SW-MKT-01', ip: '192.168.10.21', location: 'Security office', channels: 16, storage: 4, diskHealth: 'Healthy', model: '16-channel DVR' },
+      { id: 'UPS-MKT-01', name: 'Security rack backup power', type: 'UPS', branch: 'Makati Central', status: 'live', parent: '', location: 'Server rack', model: '1500 VA', notes: 'Supplies backup power to the CCTV rack.' },
+      { id: 'HDD-MKT-01', name: 'Recorder disk 1', type: 'HDD / Storage', branch: 'Makati Central', status: 'degraded', parent: 'NVR-MKT-02', model: 'Surveillance HDD 8 TB', serial: 'DEMO-DISK-2001', notes: 'Storage warning requires inspection.' },
+      { id: 'NVR-QC-01', name: 'Main recorder', type: 'NVR', branch: 'Quezon City', status: 'live', parent: '', ip: '192.168.20.20', channels: 32, storage: 8, diskHealth: 'Healthy' },
+      { id: 'NVR-CBU-01', name: 'Main recorder', type: 'NVR', branch: 'Cebu IT Park', status: 'live', parent: '', ip: '192.168.30.20', channels: 32, storage: 8, diskHealth: 'Healthy' },
+      { id: 'NVR-DVO-01', name: 'Main recorder', type: 'NVR', branch: 'Davao Downtown', status: 'live', parent: '', ip: '192.168.40.20', channels: 16, storage: 4, diskHealth: 'Healthy' },
+      { id: 'CAM-MKT-A01', name: 'Perimeter analog camera', type: 'Analog Camera', branch: 'Makati Central', status: 'live', parent: 'DVR-MKT-01', channel: 1, location: 'Rear perimeter' },
+      ...cameraRows.map((camera, index) => ({ id: camera.id, name: camera.name, type: 'IP Camera', branch: camera.branch, status: camera.current, parent: ({ 'Makati Central': 'NVR-MKT-02', 'Quezon City': 'NVR-QC-01', 'Cebu IT Park': 'NVR-CBU-01', 'Davao Downtown': 'NVR-DVO-01' })[camera.branch], channel: index % 2 + 1, location: camera.name }))
+    ].map(device => ({ ...deviceDefaults, ...device, logs: [{ at: '2026-10-22T06:00:00.000Z', actor: 'Demo setup', action: 'Registered', before: '', after: device.status, reason: 'Sample inventory for review.' }] }));
+
+    let deviceStorageAvailable = true;
+    let devices = sampleEquipment;
+    try {
+      const saved = localStorage.getItem(deviceStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed) || !parsed.every(device => device && typeof device.id === 'string' && /^[A-Za-z0-9_-]+$/.test(device.id) && typeof device.name === 'string' && deviceTypes.includes(device.type) && deviceBranches.includes(device.branch) && Object.hasOwn(deviceStates, device.status) && Array.isArray(device.logs))) throw new Error('Invalid saved inventory');
+        devices = parsed.map(device => ({ ...deviceDefaults, ...device }));
+      }
+    } catch {
+      deviceStorageAvailable = false;
+      document.getElementById('deviceStorageNote').textContent = 'Demo inventory · browser storage could not be read. Changes will remain in this tab unless a later save succeeds. Live device checks are not connected.';
+    }
+    let selectedDeviceId = devices.find(device => device.id === 'NVR-MKT-02')?.id || devices[0]?.id;
+    let editingDeviceId = null;
+    let deviceReturnFocus = null;
+    const deviceModal = document.getElementById('deviceModal');
+    const deviceForm = document.getElementById('deviceForm');
+    const deviceFieldIds = { id: 'deviceAssetId', name: 'deviceName', type: 'deviceType', branch: 'deviceBranch', environment: 'deviceEnvironment', location: 'deviceLocation', brand: 'deviceBrand', model: 'deviceModel', serial: 'deviceSerial', ip: 'deviceIp', status: 'deviceStatus', owner: 'deviceOwner', parent: 'deviceParent', channel: 'deviceChannel', channels: 'deviceChannels', storage: 'deviceStorage', diskHealth: 'deviceDiskHealth', installed: 'deviceInstalled', warranty: 'deviceWarranty', notes: 'deviceNotes' };
+    ['deviceType', 'deviceTypeFilter'].forEach(id => document.getElementById(id).insertAdjacentHTML('beforeend', deviceTypes.map(type => `<option>${escapeHtml(type)}</option>`).join('')));
+    ['deviceBranch', 'deviceBranchFilter'].forEach(id => document.getElementById(id).insertAdjacentHTML('beforeend', deviceBranches.map(branch => `<option>${escapeHtml(branch)}</option>`).join('')));
+
+    function connectedDescendants(id) {
+      const found = new Set();
+      function visit(parent) {
+        devices.filter(device => device.parent === parent).forEach(device => {
+          if (!found.has(device.id)) { found.add(device.id); visit(device.id); }
+        });
+      }
+      visit(id);
+      return found;
+    }
+
+    function deviceBadge(device) {
+      return `<span class="status ${escapeHtml(device.status)}">${escapeHtml(deviceStates[device.status])}</span>`;
+    }
+
+    function selectDevice(id) {
+      selectedDeviceId = id;
+      renderDevices();
+    }
+
+    function renderDevices() {
+      const term = document.getElementById('deviceSearch').value.trim().toLowerCase();
+      const branch = document.getElementById('deviceBranchFilter').value;
+      const type = document.getElementById('deviceTypeFilter').value;
+      const state = document.getElementById('deviceStatusFilter').value;
+      const visible = devices.filter(device => [device.id, device.name, device.branch, device.model, device.serial, device.ip].join(' ').toLowerCase().includes(term) && (branch === 'all' || device.branch === branch) && (type === 'all' || device.type === type) && (state === 'all' || device.status === state));
+      if (!visible.some(device => device.id === selectedDeviceId)) selectedDeviceId = visible[0]?.id;
+      const metrics = [
+        ['Registered devices', devices.length, 'Equipment in the demo register'],
+        ['DVRs & NVRs', devices.filter(isRecorder).length, 'Recording equipment'],
+        ['Online', devices.filter(device => device.status === 'live').length, 'Latest recorded status'],
+        ['Needs attention', devices.filter(device => ['down', 'degraded'].includes(device.status)).length, 'Down or degraded devices']
+      ];
+      document.getElementById('deviceMetrics').innerHTML = metrics.map(([label, value, note]) => `<article class="metric-card"><div class="metric-label">${label}</div><div class="metric-value">${value}</div><div class="metric-foot">${note}</div></article>`).join('');
+      document.getElementById('deviceResultCount').textContent = `${visible.length} of ${devices.length} devices · select a device to view details`;
+      document.getElementById('deviceTableBody').innerHTML = visible.map(device => `<tr class="${device.id === selectedDeviceId ? 'selected' : ''}"><td><button class="device-link" data-select-device="${escapeHtml(device.id)}"><strong>${escapeHtml(device.name)}</strong></button><small>${escapeHtml(device.id)}</small><small>${escapeHtml(device.ip || 'No network address')}</small></td><td>${escapeHtml(device.type)}<small>${escapeHtml(device.branch)}</small></td><td>${deviceBadge(device)}</td><td>${device.parent ? `<button class="device-link" data-select-device="${escapeHtml(device.parent)}">${escapeHtml(device.parent)}</button>` : '<span style="color:var(--muted)">Not assigned</span>'}</td></tr>`).join('') || '<tr><td colspan="4" class="matrix-empty">No devices match these filters.</td></tr>';
+      renderDeviceDetail();
+    }
+
+    function deviceDate(value) {
+      if (!value) return 'Not recorded';
+      const date = new Date(value.length === 10 ? `${value}T00:00:00+08:00` : value);
+      return Number.isNaN(date.getTime()) ? 'Not recorded' : date.toLocaleDateString('en-GB', { timeZone: 'Asia/Singapore', day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function renderDeviceDetail() {
+      const device = devices.find(item => item.id === selectedDeviceId);
+      const panel = document.getElementById('deviceDetail');
+      if (!device) { panel.innerHTML = '<div class="detail-body"><h2 class="card-title">Device details</h2><p class="device-description">Select a device or change your filters.</p></div>'; return; }
+      const children = devices.filter(item => item.parent === device.id);
+      const cameraCount = children.filter(isCamera).length;
+      const fields = [['Asset ID', device.id], ['Type', device.type], ['Branch', device.branch], ['Environment', device.environment], ['Location', device.location], ['Responsible team', device.owner], ['Brand / model', [device.brand, device.model].filter(Boolean).join(' / ')], ['Serial number', device.serial], ['IPv4 address', device.ip], ['Installed', deviceDate(device.installed)], ['Warranty ends', deviceDate(device.warranty)]];
+      if (isRecorder(device)) fields.push(['Camera channels', `${cameraCount} assigned / ${device.channels} capacity`], ['Installed storage', `${device.storage || 0} TB`], ['Storage health', device.diskHealth]);
+      if (isCamera(device)) fields.push(['Recorder channel', device.channel]);
+      const logHtml = [...device.logs].reverse().map(log => `<div class="device-audit"><strong>${escapeHtml(log.action)} · ${escapeHtml(log.actor)}</strong><p>${log.before ? `${escapeHtml(deviceStates[log.before] || log.before)} → ` : ''}${escapeHtml(deviceStates[log.after] || log.after)}</p><p>${escapeHtml(log.reason)}</p><time>${escapeHtml(new Date(log.at).toLocaleString('en-GB', { timeZone: 'Asia/Singapore' }))} SGT</time></div>`).join('');
+      panel.innerHTML = `<div class="card-head"><div><h2 class="card-title">${escapeHtml(device.name)}</h2><p class="card-subtitle">${escapeHtml(device.id)}</p></div>${deviceBadge(device)}</div><div class="detail-body"><button class="btn btn-primary" id="editDeviceButton">Edit / mark status</button><p class="device-description">Status is the latest recorded observation. Use Edit / mark status to enter a new state and the action taken.</p><dl class="asset-fields">${fields.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value || 'Not recorded')}</dd></div>`).join('')}</dl><div class="section-label">Connected to</div>${device.parent ? `<button class="device-link" data-select-device="${escapeHtml(device.parent)}">${escapeHtml(device.parent)} → view device</button>` : '<p class="device-description">Standalone / no upstream device assigned.</p>'}<div class="section-label">Connected equipment (${children.length})</div>${children.map(child => `<div class="device-related"><div><button class="device-link" data-select-device="${escapeHtml(child.id)}">${escapeHtml(child.id)}</button><small>${escapeHtml(child.type)} · ${escapeHtml(child.name)}${child.channel ? ` · Channel ${escapeHtml(child.channel)}` : ''}</small></div>${deviceBadge(child)}</div>`).join('') || '<p class="device-description">No equipment linked to this device.</p>'}<div class="section-label">Asset notes</div><p class="device-description" style="white-space:pre-wrap">${escapeHtml(device.notes || 'No notes recorded.')}</p><div class="section-label">Device action log</div>${logHtml || '<p class="device-description">No actions recorded.</p>'}</div>`;
+      document.getElementById('editDeviceButton').addEventListener('click', () => openDeviceForm(device.id));
+    }
+
+    document.getElementById('page-devices').addEventListener('click', event => {
+      const button = event.target.closest('[data-select-device]');
+      if (!button) return;
+      // Follow a relationship even when its target is outside the current filter.
+      document.getElementById('deviceSearch').value = '';
+      ['deviceBranchFilter', 'deviceTypeFilter', 'deviceStatusFilter'].forEach(id => document.getElementById(id).value = 'all');
+      selectDevice(button.dataset.selectDevice);
+    });
+    ['deviceSearch', 'deviceBranchFilter', 'deviceTypeFilter', 'deviceStatusFilter'].forEach(id => document.getElementById(id).addEventListener('input', renderDevices));
+
+    function refreshDeviceConnections(preferredParent) {
+      const branch = document.getElementById('deviceBranch').value;
+      const environment = document.getElementById('deviceEnvironment').value;
+      const parent = document.getElementById('deviceParent');
+      const selected = preferredParent === undefined ? parent.value : preferredParent;
+      const excluded = connectedDescendants(editingDeviceId);
+      const options = devices.filter(device => device.id !== editingDeviceId && !excluded.has(device.id) && device.branch === branch && device.environment === environment);
+      parent.innerHTML = '<option value="">Standalone / not assigned</option>' + options.map(device => `<option value="${escapeHtml(device.id)}">${escapeHtml(device.id)} · ${escapeHtml(device.type)} · ${escapeHtml(device.name)}</option>`).join('');
+      if (options.some(device => device.id === selected)) parent.value = selected;
+      refreshDeviceTypeFields();
+    }
+
+    function refreshDeviceTypeFields() {
+      const type = document.getElementById('deviceType').value;
+      const recorder = ['DVR', 'NVR'].includes(type);
+      document.getElementById('recorderFields').hidden = !recorder;
+      ['deviceChannels', 'deviceStorage', 'deviceDiskHealth'].forEach(id => document.getElementById(id).disabled = !recorder);
+      document.getElementById('deviceChannels').required = recorder;
+      const parent = devices.find(device => device.id === document.getElementById('deviceParent').value);
+      const channelEnabled = ['IP Camera', 'Analog Camera'].includes(type) && isRecorder(parent);
+      document.getElementById('deviceChannel').disabled = !channelEnabled;
+      document.getElementById('deviceChannel').max = parent?.channels || 256;
+    }
+
+    function openDeviceForm(id) {
+      const device = devices.find(item => item.id === id);
+      editingDeviceId = device?.id || null;
+      deviceReturnFocus = document.activeElement;
+      deviceForm.reset();
+      document.getElementById('deviceFormError').hidden = true;
+      document.getElementById('deviceModalTitle').textContent = device ? 'Edit device / mark status' : 'Add device';
+      const values = device || { ...deviceDefaults, type: 'DVR', branch: deviceBranches[0], status: 'unknown', parent: '', channels: 16, storage: 4 };
+      Object.entries(deviceFieldIds).filter(([key]) => key !== 'parent').forEach(([key, elementId]) => document.getElementById(elementId).value = values[key] ?? '');
+      document.getElementById('deviceAssetId').readOnly = Boolean(device);
+      refreshDeviceConnections(values.parent);
+      deviceModal.classList.add('open');
+      document.getElementById(device ? 'deviceStatus' : 'deviceAssetId').focus();
+    }
+
+    function closeDeviceForm() {
+      deviceModal.classList.remove('open');
+      if (deviceReturnFocus?.isConnected) deviceReturnFocus.focus();
+      else document.getElementById('addDeviceButton').focus();
+    }
+    document.getElementById('addDeviceButton').addEventListener('click', () => openDeviceForm());
+    document.querySelectorAll('[data-device-close]').forEach(button => button.addEventListener('click', closeDeviceForm));
+    deviceModal.addEventListener('click', event => { if (event.target === deviceModal) closeDeviceForm(); });
+    document.addEventListener('keydown', event => {
+      if (!deviceModal.classList.contains('open')) return;
+      if (event.key === 'Escape') { closeDeviceForm(); return; }
+      if (event.key !== 'Tab') return;
+      const focusable = [...deviceModal.querySelectorAll('button, input, select, textarea')].filter(element => !element.disabled && !element.closest('[hidden]'));
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    });
+    ['deviceBranch', 'deviceEnvironment'].forEach(id => document.getElementById(id).addEventListener('change', () => refreshDeviceConnections()));
+    document.getElementById('deviceType').addEventListener('change', refreshDeviceTypeFields);
+    document.getElementById('deviceParent').addEventListener('change', refreshDeviceTypeFields);
+
+    function validateDevice(next, oldDevice) {
+      if (!next.id || !next.name || !next.reason) return 'Enter an asset ID, device name, and a reason for this action.';
+      if (!oldDevice && devices.some(device => device.id.toLowerCase() === next.id.toLowerCase())) return 'This asset ID is already registered.';
+      if (next.ip && (!/^\d{1,3}(\.\d{1,3}){3}$/.test(next.ip) || next.ip.split('.').some(part => Number(part) > 255))) return 'Enter a valid IPv4 address, for example 192.168.10.20.';
+      if (next.ip && devices.some(device => device.id !== next.id && device.branch === next.branch && device.environment === next.environment && device.ip === next.ip)) return 'This IP address is already assigned in this branch and environment.';
+      const children = devices.filter(device => device.parent === next.id);
+      if (children.some(device => device.branch !== next.branch || device.environment !== next.environment)) return 'Move the connected equipment to another device before changing this branch or environment.';
+      const parent = devices.find(device => device.id === next.parent);
+      if (next.parent && (!parent || parent.branch !== next.branch || parent.environment !== next.environment || parent.id === next.id || connectedDescendants(next.id).has(parent.id))) return 'Choose a connected device in the same branch and environment, without a circular connection.';
+      if (isRecorder(next)) {
+        if (!Number.isInteger(Number(next.channels)) || Number(next.channels) < 1) return 'Enter a recorder channel capacity of at least 1.';
+        if (children.filter(isCamera).length > Number(next.channels) || children.some(device => isCamera(device) && Number(device.channel) > Number(next.channels))) return 'The capacity cannot be lower than the connected cameras or their assigned channels.';
+      } else if (isRecorder(oldDevice) && children.some(device => isCamera(device) && device.channel)) return 'Reassign the camera channels before changing this recorder to another device type.';
+      if (isCamera(next) && isRecorder(parent)) {
+        if (devices.filter(device => device.id !== next.id && device.parent === parent.id && isCamera(device)).length >= Number(parent.channels)) return 'This recorder has no available camera channels.';
+        if (next.channel && (Number(next.channel) > Number(parent.channels) || devices.some(device => device.id !== next.id && device.parent === parent.id && isCamera(device) && Number(device.channel) === Number(next.channel)))) return 'That recorder channel is unavailable. Choose an unused channel within the capacity.';
+      }
+      if (next.installed && next.warranty && next.warranty < next.installed) return 'The warranty end date must be on or after the installation date.';
+      return '';
+    }
+
+    deviceForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const next = Object.fromEntries(Object.entries(deviceFieldIds).map(([key, elementId]) => [key, document.getElementById(elementId).value.trim()]));
+      next.reason = document.getElementById('deviceReason').value.trim();
+      const oldDevice = devices.find(device => device.id === editingDeviceId);
+      const error = validateDevice(next, oldDevice);
+      const errorElement = document.getElementById('deviceFormError');
+      if (error) { errorElement.textContent = error; errorElement.hidden = false; return; }
+      const reason = next.reason;
+      delete next.reason;
+      if (!isRecorder(next)) { next.channels = ''; next.storage = ''; next.diskHealth = 'Unknown'; }
+      if (!isCamera(next) || !isRecorder(devices.find(device => device.id === next.parent))) next.channel = '';
+      const entry = { at: new Date().toISOString(), actor: currentDemoActor(), action: oldDevice ? (oldDevice.status === next.status ? 'Device updated' : 'Status changed') : 'Registered', before: oldDevice?.status || '', after: next.status, reason };
+      next.logs = [...(oldDevice?.logs || []), entry];
+      if (oldDevice) devices = devices.map(device => device.id === editingDeviceId ? next : device);
+      else devices.push(next);
+      try {
+        localStorage.setItem(deviceStorageKey, JSON.stringify(devices));
+        deviceStorageAvailable = true;
+        document.getElementById('deviceStorageNote').textContent = 'Demo inventory · changes are saved in this browser. Status is recorded manually; live device checks are not connected.';
+      } catch {
+        deviceStorageAvailable = false;
+        document.getElementById('deviceStorageNote').textContent = 'Browser storage is unavailable. Your changes remain in this tab and will be lost on reload. Live device checks are not connected.';
+      }
+      selectedDeviceId = next.id;
+      document.getElementById('deviceSearch').value = '';
+      ['deviceBranchFilter', 'deviceTypeFilter', 'deviceStatusFilter'].forEach(id => document.getElementById(id).value = 'all');
+      renderDevices();
+      closeDeviceForm();
+      showToast(deviceStorageAvailable ? 'Device saved. Action log updated.' : 'Device updated in this tab only; browser storage unavailable.');
+    });
+    renderDevices();
+
+    // Incident workflow: saved reports, append-only history, resolution and verification.
+    const incidentStorageKey = 'rosewatch-incidents-v1';
+    let incidentActor = 'Alex Mendoza';
+    const activeIncidentStates = ['open', 'assigned', 'in_progress', 'on_hold'];
+    const incidentStateLabels = { open: 'Open', assigned: 'Assigned', in_progress: 'In progress', on_hold: 'On hold', resolved: 'Resolved', closed: 'Verified / closed' };
+    const incidentTeams = ['CCTV Operations', 'Network Support', 'Branch Facilities', 'Security Vendor'];
+    const incidentPriorityOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    const initialIncidents = [
+      { id: 'IR-2026-1048', title: 'Loading Bay camera offline', branch: 'Makati Central', deviceId: 'CAM-MKT-012', priority: 'Critical', category: 'Camera offline', assignee: 'Network Support', status: 'in_progress', createdAt: '2026-10-20T03:31:00Z', dueAt: '2026-10-20T07:31:00Z', description: 'Loading bay camera is unreachable. Branch inspection requested.', logs: [
+        { at: '2026-10-20T03:31:00Z', by: 'Monitoring engine', type: 'Detection', notes: 'Three consecutive health checks failed. Incident created.', from: '', to: 'open' },
+        { at: '2026-10-20T03:42:00Z', by: 'A. Mendoza', type: 'Assignment', notes: 'Assigned to Network Support.', from: 'open', to: 'assigned' },
+        { at: '2026-10-21T08:05:00Z', by: 'R. Santos', type: 'Troubleshooting', notes: 'PoE switch port remotely restarted. Camera did not reconnect. Branch technician asked to inspect cabling.', from: 'assigned', to: 'in_progress' },
+        { at: '2026-10-22T05:20:00Z', by: 'System', type: 'Escalation', notes: 'Escalated to Level 2 after no recovery was confirmed.', from: 'in_progress', to: 'in_progress' }
+      ] },
+      { id: 'IR-2026-1051', title: 'Main entrance signal lost', branch: 'Quezon City', deviceId: 'CAM-QC-004', priority: 'High', category: 'Network fault', assignee: 'Network Support', status: 'in_progress', createdAt: '2026-10-22T02:59:00Z', dueAt: '2026-10-23T02:59:00Z', description: 'Camera became unreachable during morning operations.' },
+      { id: 'IR-2026-1053', title: 'Stock room camera intermittent', branch: 'Cebu IT Park', deviceId: 'CAM-CBU-021', priority: 'High', category: 'Network fault', assignee: 'CCTV Operations', status: 'assigned', createdAt: '2026-10-22T05:55:00Z', dueAt: '2026-10-23T05:55:00Z', description: 'Intermittent connectivity requires investigation.' },
+      { id: 'IR-2026-1049', title: 'Recorder storage above threshold', branch: 'Makati Central', deviceId: 'NVR-MKT-02', priority: 'Medium', category: 'Storage issue', assignee: 'Security Vendor', status: 'on_hold', createdAt: '2026-10-21T10:40:00Z', dueAt: '2026-10-24T10:40:00Z', description: 'Storage utilization warning. Waiting for vendor assessment.' },
+      { id: 'IR-2026-1046', title: 'Parking camera power restored', branch: 'Davao Downtown', deviceId: 'CAM-DVO-003', priority: 'Medium', category: 'Power issue', assignee: 'Branch Facilities', status: 'resolved', createdAt: '2026-10-21T01:00:00Z', dueAt: '2026-10-24T01:00:00Z', description: 'Intermittent power to the parking camera.', resolution: { cause: 'Power supply', work: 'Replaced the faulty power adapter and checked camera connectivity.', restoredAt: '2026-10-23T07:00:00Z', prevention: 'Inspect power adapters during monthly maintenance.', reference: 'WO-DEMO-1046', resolvedAt: '2026-10-23T07:15:00Z', by: 'Branch Facilities', confirmed: true } }
+    ].map(incident => {
+      const report = { environment: 'Production', resolution: null, verification: null, ...incident };
+      if (!report.logs) report.logs = [{ at: report.createdAt, by: 'Demo setup', type: 'Incident created', notes: report.description, from: '', to: report.resolution ? 'open' : report.status }];
+      if (report.resolution) report.logs.push({ at: report.resolution.resolvedAt, by: report.resolution.by, type: 'Resolved', notes: `${report.resolution.cause}: ${report.resolution.work}`, reference: report.resolution.reference, from: 'in_progress', to: 'resolved', resolution: { ...report.resolution } });
+      return report;
+    });
+    let incidents = initialIncidents;
+    try {
+      const saved = localStorage.getItem(incidentStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const valid = Array.isArray(parsed) && parsed.every(item => item && typeof item.id === 'string' && typeof item.title === 'string' && Object.hasOwn(incidentStateLabels, item.status) && Object.hasOwn(incidentPriorityOrder, item.priority) && Array.isArray(item.logs) && item.logs.every(log => log && typeof log.notes === 'string') && Number.isFinite(Date.parse(item.createdAt)) && (!(item.status === 'resolved' || item.status === 'closed') || item.resolution));
+        if (!valid) throw new Error('Invalid incident data');
+        incidents = parsed;
+      }
+    } catch {
+      document.getElementById('incidentStorageNote').textContent = 'Saved incident data could not be read. Showing sample reports; changes remain in this tab until they can be saved.';
+    }
+    let selectedIncidentId = incidents.find(item => activeIncidentStates.includes(item.status))?.id || incidents[0]?.id;
+    let workflowTarget = null;
+    let incidentReturnFocus = null;
+    const workflowModal = document.getElementById('incidentWorkflowModal');
+    const workflowForm = document.getElementById('incidentWorkflowForm');
+    document.getElementById('incidentStatusFilter').value = 'active';
+
+    const proofLimits = { count: 3, perFile: 1024 * 1024, total: 2 * 1024 * 1024 };
+    const proofMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    let workflowProofs = [];
+    let proofReading = false;
+    let proofReadGeneration = 0;
+    let proofViewUrl = null;
+    let proofReturnFocus = null;
+    const proofViewer = document.getElementById('proofViewerModal');
+    function proofSize(bytes) { return bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`; }
+    function isProofAttachment(proof) {
+      if (!proof || typeof proof.id !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(proof.id) || typeof proof.name !== 'string' || !proofMimeTypes.includes(proof.mime) || !Number.isInteger(proof.size) || proof.size < 1 || proof.size > proofLimits.perFile || typeof proof.dataUrl !== 'string' || proof.dataUrl.length > proofLimits.perFile * 1.4 + 100) return false;
+      const prefix = `data:${proof.mime};base64,`;
+      if (!proof.dataUrl.startsWith(prefix)) return false;
+      const base64 = proof.dataUrl.slice(prefix.length);
+      if (!/^[A-Za-z0-9+/]+={0,2}$/.test(base64) || base64.length % 4 !== 0) return false;
+      const byteCount = base64.length * 3 / 4 - (base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0);
+      if (byteCount !== proof.size) return false;
+      try {
+        const header = atob(base64.slice(0, 32));
+        return ({ 'image/jpeg': header.startsWith('\xff\xd8\xff'), 'image/png': header.startsWith('\x89PNG\r\n\x1a\n'), 'image/webp': header.startsWith('RIFF') && header.slice(8, 12) === 'WEBP', 'application/pdf': header.startsWith('%PDF-') })[proof.mime];
+      } catch { return false; }
+    }
+    function proofCards(attachments, removable = false) {
+      return (attachments || []).filter(isProofAttachment).map(proof => `<div class="proof-card"><button type="button" class="proof-thumb" data-proof-view="${escapeHtml(proof.id)}" aria-label="Preview ${escapeHtml(proof.name)}">${proof.mime.startsWith('image/') ? `<img src="${proof.dataUrl}" alt="${escapeHtml(proof.name)}" loading="lazy">` : '<span>PDF</span>'}</button><strong>${escapeHtml(proof.name)}</strong><small>${proofSize(proof.size)} · ${proof.mime === 'application/pdf' ? 'PDF' : 'Image'}</small><div class="proof-actions"><button type="button" data-proof-view="${escapeHtml(proof.id)}">View</button><a href="${proof.dataUrl}" download="${escapeHtml(proof.name)}">Download</a>${removable ? `<button type="button" data-proof-remove="${escapeHtml(proof.id)}"${proofReading ? ' disabled' : ''}>Remove</button>` : ''}</div></div>`).join('');
+    }
+    function incidentProofs(incident) { return incident.logs.flatMap(log => log.attachments || []); }
+    function renderWorkflowProofs() {
+      document.getElementById('workflowProofList').innerHTML = proofCards(workflowProofs, true);
+      document.getElementById('proofUploadStatus').textContent = proofReading ? 'Reading proof files…' : workflowProofs.length ? `${workflowProofs.length} file(s) selected · ${proofSize(workflowProofs.reduce((total, proof) => total + proof.size, 0))}` : 'No proof selected.';
+      document.getElementById('workflowProofFiles').disabled = proofReading;
+      document.getElementById('workflowSave').disabled = proofReading;
+    }
+    function resetWorkflowProofs() {
+      proofReadGeneration += 1;
+      workflowProofs = [];
+      proofReading = false;
+      document.getElementById('workflowProofFiles').value = '';
+      renderWorkflowProofs();
+    }
+    function readProofFile(file) {
+      const extensionType = ({ jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf' })[file.name.split('.').at(-1).toLowerCase()];
+      const mime = file.type || extensionType;
+      if (!proofMimeTypes.includes(mime)) return Promise.reject(new Error(`${file.name}: choose a JPG, PNG, WebP image, or PDF document.`));
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error(`${file.name}: the file could not be read. Please select it again.`));
+        reader.onabort = () => reject(new Error(`${file.name}: reading was cancelled. Please select it again.`));
+        reader.onload = () => {
+          const encoded = String(reader.result).split(',')[1] || '';
+          const proof = { id: `proof-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`, name: file.name, mime, size: file.size, dataUrl: `data:${mime};base64,${encoded}` };
+          if (!isProofAttachment(proof)) reject(new Error(`${file.name}: this file does not match its image or PDF format.`));
+          else resolve(proof);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    async function addWorkflowProofFiles(files) {
+      if (proofReading || !files.length) return;
+      const errorElement = document.getElementById('workflowError');
+      errorElement.hidden = true;
+      const size = workflowProofs.reduce((total, proof) => total + proof.size, 0) + files.reduce((total, file) => total + file.size, 0);
+      let error = '';
+      if (workflowProofs.length + files.length > proofLimits.count) error = 'Attach up to 3 proof files per entry. Remove a selected file before adding another.';
+      else if (files.some(file => file.size > proofLimits.perFile || file.size < 1)) error = 'Each proof file must contain data and be no larger than 1 MB.';
+      else if (size > proofLimits.total) error = 'Keep the combined proof files for this entry within 2 MB.';
+      if (error) { errorElement.textContent = error; errorElement.hidden = false; return; }
+      const generation = ++proofReadGeneration;
+      proofReading = true;
+      renderWorkflowProofs();
+      try {
+        const proofs = await Promise.all(files.map(readProofFile));
+        if (generation !== proofReadGeneration) return;
+        workflowProofs.push(...proofs);
+      } catch (error) {
+        if (generation !== proofReadGeneration) return;
+        errorElement.textContent = error.message;
+        errorElement.hidden = false;
+      } finally {
+        if (generation === proofReadGeneration) { proofReading = false; renderWorkflowProofs(); }
+      }
+    }
+    document.getElementById('workflowProofFiles').addEventListener('change', event => {
+      const files = Array.from(event.target.files || []);
+      event.target.value = '';
+      return addWorkflowProofFiles(files);
+    });
+    document.getElementById('workflowProofList').addEventListener('click', event => {
+      const button = event.target.closest('[data-proof-remove]');
+      if (!button || proofReading) return;
+      workflowProofs = workflowProofs.filter(proof => proof.id !== button.dataset.proofRemove);
+      renderWorkflowProofs();
+    });
+    function closeProofViewer() {
+      proofViewer.classList.remove('open');
+      document.getElementById('proofViewerBody').innerHTML = '';
+      document.getElementById('proofViewerDownload').removeAttribute('href');
+      if (proofViewUrl) URL.revokeObjectURL(proofViewUrl);
+      proofViewUrl = null;
+      if (proofReturnFocus?.isConnected) proofReturnFocus.focus();
+    }
+    function openProofViewer(id) {
+      const proof = [...workflowProofs, ...incidents.flatMap(incidentProofs)].find(item => item.id === id);
+      if (!isProofAttachment(proof)) { showToast('This proof attachment is unavailable.'); return; }
+      if (proofViewUrl) URL.revokeObjectURL(proofViewUrl);
+      proofReturnFocus = document.activeElement;
+      const binary = atob(proof.dataUrl.split(',')[1]);
+      proofViewUrl = URL.createObjectURL(new Blob([Uint8Array.from(binary, character => character.charCodeAt(0))], { type: proof.mime }));
+      document.getElementById('proofViewerTitle').textContent = proof.name;
+      document.getElementById('proofViewerMeta').textContent = `${proofSize(proof.size)}${proof.uploadedBy ? ` · ${proof.uploadedBy} · ${incidentTime(proof.uploadedAt)}` : ' · Ready to attach'}`;
+      document.getElementById('proofViewerBody').innerHTML = proof.mime.startsWith('image/') ? `<img src="${proofViewUrl}" alt="${escapeHtml(proof.name)}">` : `<iframe src="${proofViewUrl}" title="PDF proof: ${escapeHtml(proof.name)}"></iframe><p>If this browser cannot preview the PDF, use Download proof.</p>`;
+      const download = document.getElementById('proofViewerDownload');
+      download.href = proofViewUrl;
+      download.download = proof.name;
+      proofViewer.classList.add('open');
+      document.getElementById('proofViewerClose').focus();
+    }
+    document.addEventListener('click', event => {
+      const button = event.target.closest('[data-proof-view]');
+      if (button) openProofViewer(button.dataset.proofView);
+    });
+    document.getElementById('proofViewerClose').addEventListener('click', closeProofViewer);
+    proofViewer.addEventListener('click', event => { if (event.target === proofViewer) closeProofViewer(); });
+    document.addEventListener('keydown', event => {
+      if (!proofViewer.classList.contains('open')) return;
+      event.stopImmediatePropagation();
+      if (event.key === 'Escape') { event.preventDefault(); closeProofViewer(); return; }
+      if (event.key === 'Tab') {
+        const first = document.getElementById('proofViewerClose');
+        const last = document.getElementById('proofViewerDownload');
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    });
+
+    function incidentTime(value) {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? 'Not recorded' : date.toLocaleString('en-GB', { timeZone: 'Asia/Manila', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PHT';
+    }
+    function incidentLocalInput(value) { return new Date(new Date(value).getTime() + 8 * 3600000).toISOString().slice(0, 19); }
+    function incidentBadge(status) {
+      const color = ({ open: 'down', assigned: 'maintenance', in_progress: 'degraded', on_hold: 'unknown', resolved: 'live', closed: 'live' })[status];
+      return `<span class="status ${color}">${escapeHtml(incidentStateLabels[status])}</span>`;
+    }
+    function incidentOverdue(incident) { return activeIncidentStates.includes(incident.status) && new Date(incident.dueAt).getTime() < Date.now(); }
+    function persistIncidents(records = incidents) {
+      try {
+        localStorage.setItem(incidentStorageKey, JSON.stringify(records));
+        document.getElementById('incidentStorageNote').textContent = 'Demo workspace · incident reports and history are saved in this browser.';
+        return true;
+      } catch {
+        document.getElementById('incidentStorageNote').textContent = 'Browser storage is unavailable. Incident changes remain in this tab and will be lost on reload.';
+        return false;
+      }
+    }
+    function renderIncidents() {
+      const active = incidents.filter(item => activeIncidentStates.includes(item.status));
+      const resolved = incidents.filter(item => item.status === 'resolved');
+      const closed = incidents.filter(item => item.status === 'closed');
+      const overdue = active.filter(incidentOverdue);
+      document.getElementById('incidentSummary').textContent = `${active.length} active · ${resolved.length} awaiting verification · ${closed.length} verified / closed`;
+      document.getElementById('incidentMetrics').innerHTML = [['Active incidents', active.length], ['Resolved / awaiting verification', resolved.length], ['Verified / closed', closed.length], ['Overdue active incidents', overdue.length]].map(([label, count]) => `<article class="metric-card"><div class="metric-label">${label}</div><div class="metric-value">${count}</div></article>`).join('');
+      document.querySelectorAll('.nav-item[data-page="incidents"] .nav-badge').forEach(badge => badge.textContent = active.length);
+      const dashboardCount = document.getElementById('dashboardIncidentCount');
+      if (dashboardCount) dashboardCount.textContent = active.length;
+      const dashboardOverdue = document.getElementById('dashboardIncidentOverdue');
+      if (dashboardOverdue) dashboardOverdue.textContent = `${overdue.length} overdue`;
+      document.querySelectorAll('.branch-table tbody tr').forEach(row => {
+        const branch = row.querySelector('.branch-name strong')?.textContent;
+        if (branch && row.cells[3]) row.cells[3].textContent = active.filter(item => item.branch === branch).length;
+      });
+      const term = document.getElementById('incidentSearch').value.trim().toLowerCase();
+      const status = document.getElementById('incidentStatusFilter').value;
+      const priority = document.getElementById('incidentPriorityFilter').value;
+      const visible = incidents.filter(item => (status === 'all' || (status === 'active' ? activeIncidentStates.includes(item.status) : item.status === status)) && (priority === 'all' || item.priority === priority) && [item.id, item.title, item.branch, item.deviceId, item.assignee].join(' ').toLowerCase().includes(term)).sort((a, b) => incidentPriorityOrder[a.priority] - incidentPriorityOrder[b.priority] || Date.parse(a.createdAt) - Date.parse(b.createdAt));
+      if (!visible.some(item => item.id === selectedIncidentId)) selectedIncidentId = visible[0]?.id;
+      document.getElementById('incidentResultCount').textContent = `${visible.length} reports · priority, then oldest first`;
+      document.getElementById('incidentItems').innerHTML = visible.map(item => `<button class="incident-row ${item.id === selectedIncidentId ? 'active' : ''}" data-incident="${escapeHtml(item.id)}" aria-pressed="${item.id === selectedIncidentId}"><span class="severity ${item.priority === 'Critical' ? 'critical' : item.priority === 'Low' ? 'low' : ''}"></span><span class="incident-main"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.id)} · ${escapeHtml(item.branch)} · ${escapeHtml(item.deviceId)}</span></span><span class="incident-side"><span>${escapeHtml(item.priority)}${incidentOverdue(item) ? ' · SLA overdue' : ''}</span>${incidentBadge(item.status)}</span></button>`).join('') || '<div class="incident-empty">No incidents match these filters.</div>';
+      renderIncidentDetail();
+    }
+    function renderIncidentDetail() {
+      const incident = incidents.find(item => item.id === selectedIncidentId);
+      const panel = document.getElementById('incidentDetail');
+      if (!incident) { panel.innerHTML = '<div class="detail-body"><h2 class="card-title">Incident details</h2><p class="device-description">Select a report or change your filters.</p></div>'; return; }
+      const r = incident.resolution;
+      const v = incident.verification;
+      const resolutionProofs = incidentProofs(incident).filter(proof => (r?.proofIds || []).includes(proof.id) && isProofAttachment(proof));
+      const resolutionHtml = r ? `<div class="resolution-card"><h3>${incident.status === 'closed' ? 'Verified resolution' : 'Resolution awaiting verification'}</h3><dl><dt>Root cause</dt><dd>${escapeHtml(r.cause)}</dd><dt>Work performed</dt><dd>${escapeHtml(r.work)}</dd><dt>Service restored</dt><dd>${escapeHtml(incidentTime(r.restoredAt))}</dd><dt>Resolved by</dt><dd>${escapeHtml(r.by)} · ${escapeHtml(incidentTime(r.resolvedAt))}</dd><dt>Preventive action</dt><dd>${escapeHtml(r.prevention || 'No follow-up recorded.')}</dd>${r.reference ? `<dt>Evidence / reference</dt><dd>${escapeHtml(r.reference)}</dd>` : ''}<dt>Resolution proof (${resolutionProofs.length})</dt><dd>${resolutionProofs.length ? `<div class="proof-grid">${proofCards(resolutionProofs)}</div>` : 'No proof attached.'}</dd>${v ? `<dt>Verified by</dt><dd>${escapeHtml(v.by)} · ${escapeHtml(incidentTime(v.at))}</dd><dt>Verification notes</dt><dd>${escapeHtml(v.notes)}</dd>` : ''}</dl></div>` : '';
+      const history = [...incident.logs].reverse().map(log => `<div class="timeline-item"><strong>${escapeHtml(log.type)} · ${escapeHtml(log.by)}</strong><p>${escapeHtml(log.notes)}</p>${log.from !== log.to && log.to ? `<span class="log-change">${log.from ? `${escapeHtml(incidentStateLabels[log.from])} → ` : ''}${escapeHtml(incidentStateLabels[log.to])}</span>` : ''}${log.resolution ? `<p>Root cause: ${escapeHtml(log.resolution.cause)}\nRestored: ${escapeHtml(incidentTime(log.resolution.restoredAt))}${log.resolution.prevention ? `\nPrevention: ${escapeHtml(log.resolution.prevention)}` : ''}</p>` : ''}${log.reference ? `<p>Reference: ${escapeHtml(log.reference)}</p>` : ''}${log.attachments?.length ? `<div class="section-label">Proof attachments</div><div class="proof-grid">${proofCards(log.attachments)}</div>` : ''}<time>${escapeHtml(incidentTime(log.at))}</time></div>`).join('');
+      panel.innerHTML = `<div class="card-head"><div><h2 class="card-title">Incident detail</h2><p class="card-subtitle" id="incidentId">${escapeHtml(incident.id)}</p></div>${incidentBadge(incident.status)}</div><div class="detail-body"><div class="incident-heading"><h2 id="incidentTitle">${escapeHtml(incident.title)}</h2></div><p class="device-description">${escapeHtml(incident.branch)} · ${escapeHtml(incident.deviceId)} · ${escapeHtml(incident.category)}</p><div class="info-grid"><div><small>Assigned to</small><strong>${escapeHtml(incident.assignee)}</strong></div><div><small>Priority</small><strong>${escapeHtml(incident.priority)}</strong></div><div><small>Environment</small><strong>${escapeHtml(incident.environment)}</strong></div><div><small>Opened</small><strong>${escapeHtml(incidentTime(incident.createdAt))}</strong></div><div><small>Resolution target</small><strong>${escapeHtml(incidentTime(incident.dueAt))}</strong></div><div><small>SLA status</small><strong>${activeIncidentStates.includes(incident.status) ? (incidentOverdue(incident) ? 'Overdue' : 'Within target') : (Date.parse(r?.resolvedAt) > Date.parse(incident.dueAt) ? 'Resolved after target' : 'Resolved within target')}</strong></div></div><p class="device-description" style="white-space:pre-wrap">${escapeHtml(incident.description)}</p>${resolutionHtml}<div class="section-label">Actions</div><div class="detail-actions"><button class="btn" data-incident-action="action">Add action log</button>${activeIncidentStates.includes(incident.status) ? '<button class="btn btn-primary" data-incident-action="resolve">Resolve incident</button>' : `${incident.status === 'resolved' ? '<button class="btn btn-primary" data-incident-action="verify">Verify & close</button>' : ''}<button class="btn btn-danger" data-incident-action="reopen">Reopen incident</button>`}</div><div class="section-label">Action history (${incident.logs.length})</div><div class="timeline">${history}</div></div>`;
+    }
+    document.getElementById('incidentItems').addEventListener('click', event => {
+      const row = event.target.closest('[data-incident]');
+      if (!row) return;
+      selectedIncidentId = row.dataset.incident;
+      renderIncidents();
+    });
+    document.getElementById('incidentDetail').addEventListener('click', event => {
+      const button = event.target.closest('[data-incident-action]');
+      if (button) openIncidentWorkflow(button.dataset.incidentAction, selectedIncidentId);
+    });
+    ['incidentSearch', 'incidentStatusFilter', 'incidentPriorityFilter'].forEach(id => document.getElementById(id).addEventListener('input', renderIncidents));
+
+    function openIncidentWorkflow(mode, id) {
+      const incident = incidents.find(item => item.id === id);
+      if (!incident || !['action', 'resolve', 'verify', 'reopen'].includes(mode)) return;
+      workflowTarget = { mode, id };
+      incidentReturnFocus = document.activeElement;
+      workflowForm.reset();
+      resetWorkflowProofs();
+      document.getElementById('workflowError').hidden = true;
+      const titles = { action: 'Add action log', resolve: 'Resolve incident', verify: 'Verify & close incident', reopen: 'Reopen incident' };
+      document.getElementById('workflowTitle').textContent = titles[mode];
+      document.getElementById('workflowSave').textContent = mode === 'action' ? 'Save action log' : titles[mode];
+      document.getElementById('workflowContext').textContent = `${incident.id} · ${incident.deviceId}`;
+      document.getElementById('workflowNotesLabel').textContent = ({ action: 'Action taken / findings *', resolve: 'Work performed / resolution details *', verify: 'Verification findings *', reopen: 'Reason for reopening *' })[mode];
+      document.getElementById('workflowNotes').placeholder = ({ action: 'Describe the action, findings, and next steps', resolve: 'Describe the repair or corrective action that restored service', verify: 'Record how you checked the service and confirmed the fix', reopen: 'Describe the recurring issue or why the resolution was ineffective' })[mode];
+      ['actionLogFields', 'resolutionFields'].forEach(groupId => {
+        const shown = groupId === 'actionLogFields' ? mode === 'action' : mode === 'resolve';
+        const group = document.getElementById(groupId);
+        group.hidden = !shown;
+        group.querySelectorAll('input, select, textarea').forEach(control => control.disabled = !shown);
+      });
+      const active = activeIncidentStates.includes(incident.status);
+      document.getElementById('actionLogStatus').innerHTML = (active ? activeIncidentStates : [incident.status]).map(status => `<option value="${status}">${escapeHtml(incidentStateLabels[status])}</option>`).join('');
+      document.getElementById('actionLogStatus').value = incident.status;
+      document.getElementById('actionLogStatus').disabled = mode !== 'action' || !active;
+      document.getElementById('actionLogAssignee').value = incident.assignee;
+      document.getElementById('actionLogAssignee').disabled = mode !== 'action' || !active;
+      document.getElementById('workflowCheckGroup').hidden = !['resolve', 'verify'].includes(mode);
+      document.getElementById('workflowConfirmed').disabled = !['resolve', 'verify'].includes(mode);
+      document.getElementById('workflowConfirmed').required = ['resolve', 'verify'].includes(mode);
+      document.getElementById('workflowCheckLabel').textContent = mode === 'verify' ? 'I have checked the equipment and verified that the resolution is effective.' : 'I have confirmed that service is restored.';
+      document.getElementById('resolutionRestoredAt').min = incidentLocalInput(incident.createdAt);
+      document.getElementById('resolutionRestoredAt').max = incidentLocalInput(new Date());
+      document.getElementById('resolutionRestoredAt').value = incidentLocalInput(new Date());
+      document.getElementById('workflowHelp').textContent = ({ action: 'Your action, name, time, and any assignment or status changes will be appended to this incident’s history.', resolve: 'The incident will move to Resolved / awaiting verification. Equipment status is recorded separately in Device management.', verify: 'Confirm the resolution, then close the incident. The resolution and full action history remain available.', reopen: 'The incident will return to In progress with a new resolution target. Earlier resolution details remain in its action history.' })[mode];
+      workflowModal.classList.add('open');
+      document.getElementById(mode === 'resolve' ? 'resolutionCause' : 'workflowNotes').focus();
+    }
+    function closeIncidentDialog(dialog) {
+      dialog.classList.remove('open');
+      if (incidentReturnFocus?.isConnected) incidentReturnFocus.focus();
+      else document.getElementById('incidentSearch').focus();
+      if (dialog === workflowModal) { workflowTarget = null; resetWorkflowProofs(); }
+    }
+    document.querySelectorAll('[data-workflow-close]').forEach(button => button.addEventListener('click', () => closeIncidentDialog(workflowModal)));
+    document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => closeIncidentDialog(modal)));
+    [workflowModal, modal].forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) closeIncidentDialog(dialog); }));
+    document.addEventListener('keydown', event => {
+      if (proofViewer.classList.contains('open')) return;
+      const dialog = workflowModal.classList.contains('open') ? workflowModal : modal.classList.contains('open') ? modal : null;
+      if (!dialog) return;
+      if (event.key === 'Escape') { closeIncidentDialog(dialog); return; }
+      if (event.key !== 'Tab') return;
+      const fields = [...dialog.querySelectorAll('button, input, select, textarea')].filter(field => !field.disabled && !field.closest('[hidden]'));
+      const first = fields[0], last = fields[fields.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    });
+    function incidentDueAt(priority, from = new Date()) {
+      return new Date(new Date(from).getTime() + ({ Critical: 4, High: 24, Medium: 72, Low: 120 })[priority] * 3600000).toISOString();
+    }
+    function applyIncidentWorkflow(id, mode, fields) {
+      const incident = incidents.find(item => item.id === id);
+      if (!incident) return { error: 'This incident could not be found.' };
+      const notes = String(fields.notes || '').trim();
+      if (!notes) return { error: 'Enter details for this action.' };
+      const active = activeIncidentStates.includes(incident.status);
+      if (mode === 'resolve' && !active) return { error: 'Only an active incident can be resolved.' };
+      if (mode === 'verify' && incident.status !== 'resolved') return { error: 'Resolve the incident before verifying it.' };
+      if (mode === 'reopen' && !['resolved', 'closed'].includes(incident.status)) return { error: 'Only resolved or closed incidents can be reopened.' };
+      if (!['action', 'resolve', 'verify', 'reopen'].includes(mode)) return { error: 'Choose a valid action.' };
+      const attachments = fields.attachments || [];
+      if (!Array.isArray(attachments) || attachments.length > proofLimits.count || !attachments.every(isProofAttachment) || attachments.reduce((total, proof) => total + proof.size, 0) > proofLimits.total) return { error: 'Choose up to 3 valid proof files, 1 MB per file and 2 MB combined.' };
+      const at = new Date().toISOString();
+      const next = { ...incident };
+      const entry = { at, by: incidentActor, type: fields.type || 'Note', notes, reference: String(fields.reference || '').trim(), from: incident.status, to: incident.status, attachments: attachments.map(proof => ({ ...proof, uploadedAt: at, uploadedBy: incidentActor })) };
+      if (mode === 'action' && active) {
+        if (!activeIncidentStates.includes(fields.status) || !incidentTeams.includes(fields.assignee)) return { error: 'Choose a valid active status and assigned team.' };
+        next.status = fields.status;
+        next.assignee = fields.assignee;
+        if (next.assignee !== incident.assignee) entry.notes += `\nAssigned team: ${incident.assignee} → ${next.assignee}`;
+      }
+      if (mode === 'resolve') {
+        const restoredAt = new Date(`${fields.restoredAt}+08:00`);
+        if (!fields.cause || !fields.confirmed) return { error: 'Select a root cause and confirm that service is restored.' };
+        if (!fields.restoredAt || !Number.isFinite(restoredAt.getTime()) || restoredAt.getTime() > Date.now() || restoredAt.getTime() < Math.floor(Date.parse(incident.createdAt) / 1000) * 1000) return { error: 'Restoration time must be between the incident opening time and now, in Philippine time.' };
+        const lastReopen = [...incident.logs].reverse().find(log => log.type === 'Reopened');
+        if (lastReopen && restoredAt.getTime() < Math.floor(Date.parse(lastReopen.at) / 1000) * 1000) return { error: 'For a reopened incident, restoration must be after it was reopened.' };
+        next.status = 'resolved';
+        next.resolution = { cause: fields.cause, work: notes, restoredAt: restoredAt.toISOString(), prevention: String(fields.prevention || '').trim(), reference: entry.reference, resolvedAt: at, by: incidentActor, confirmed: true, proofIds: entry.attachments.map(proof => proof.id) };
+        next.verification = null;
+        entry.type = 'Resolved';
+        entry.resolution = { ...next.resolution };
+      }
+      if (mode === 'verify') {
+        if (!fields.confirmed) return { error: 'Confirm that you have verified the restored service.' };
+        next.status = 'closed';
+        next.verification = { at, by: incidentActor, notes, reference: entry.reference };
+        entry.type = 'Verified & closed';
+      }
+      if (mode === 'reopen') {
+        next.status = 'in_progress';
+        next.resolution = null;
+        next.verification = null;
+        next.dueAt = incidentDueAt(incident.priority, at);
+        entry.type = 'Reopened';
+      }
+      entry.to = next.status;
+      next.logs = [...incident.logs, entry];
+      const candidate = incidents.map(item => item.id === id ? next : item);
+      const saved = persistIncidents(candidate);
+      if (!saved && attachments.length) {
+        document.getElementById('incidentStorageNote').textContent = 'The proof attachment could not be saved. This incident was not changed. Choose smaller files or retry when browser storage is available.';
+        return { error: 'Proof could not be saved in this browser. The incident was not changed. Remove a file or choose smaller files, then retry.' };
+      }
+      incidents = candidate;
+      return { saved, incident: next };
+    }
+    workflowForm.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!workflowTarget) return;
+      if (proofReading) { document.getElementById('workflowError').textContent = 'Wait until the proof files have finished loading.'; document.getElementById('workflowError').hidden = false; return; }
+      const result = applyIncidentWorkflow(workflowTarget.id, workflowTarget.mode, { notes: document.getElementById('workflowNotes').value, type: document.getElementById('actionLogType').value, status: document.getElementById('actionLogStatus').value, assignee: document.getElementById('actionLogAssignee').value, cause: document.getElementById('resolutionCause').value, restoredAt: document.getElementById('resolutionRestoredAt').value, prevention: document.getElementById('resolutionPrevention').value, reference: document.getElementById('workflowReference').value, confirmed: document.getElementById('workflowConfirmed').checked, attachments: workflowProofs });
+      if (result.error) { document.getElementById('workflowError').textContent = result.error; document.getElementById('workflowError').hidden = false; return; }
+      selectedIncidentId = result.incident.id;
+      document.getElementById('incidentStatusFilter').value = activeIncidentStates.includes(result.incident.status) ? 'active' : result.incident.status;
+      renderIncidents();
+      closeIncidentDialog(workflowModal);
+      showToast(result.saved ? 'Incident updated. History saved.' : 'Incident updated in this tab only; browser storage unavailable.');
+    });
+
+    function refreshIncidentDeviceOptions() {
+      const branch = document.getElementById('modalBranch').value;
+      const environment = document.getElementById('modalEnvironment').value;
+      const field = document.getElementById('modalCamera');
+      const selected = field.value;
+      const matching = devices.filter(device => device.branch === branch && device.environment === environment);
+      field.innerHTML = '<option value="">Select device</option>' + matching.map(device => `<option value="${escapeHtml(device.id)}">${escapeHtml(device.id)} · ${escapeHtml(device.name)}</option>`).join('');
+      if (matching.some(device => device.id === selected)) field.value = selected;
+    }
+    ['modalBranch', 'modalEnvironment'].forEach(id => document.getElementById(id).addEventListener('change', refreshIncidentDeviceOptions));
+    const creationError = document.createElement('p');
+    creationError.id = 'incidentCreateError';
+    creationError.className = 'form-error';
+    creationError.setAttribute('role', 'alert');
+    creationError.hidden = true;
+    document.querySelector('#incidentForm .modal-body').appendChild(creationError);
+    document.querySelectorAll('.open-incident').forEach(button => button.addEventListener('click', () => {
+      incidentReturnFocus = document.activeElement;
+      document.getElementById('incidentForm').reset();
+      creationError.hidden = true;
+      refreshIncidentDeviceOptions();
+      modal.classList.add('open');
+      document.getElementById('modalBranch').focus();
+    }));
+    document.getElementById('incidentForm').addEventListener('submit', event => {
+      event.preventDefault();
+      const title = document.getElementById('modalSummary').value.trim();
+      const branch = document.getElementById('modalBranch').value;
+      const environment = document.getElementById('modalEnvironment').value;
+      const deviceId = document.getElementById('modalCamera').value;
+      const device = devices.find(item => item.id === deviceId && item.branch === branch && item.environment === environment);
+      const priority = document.getElementById('modalPriority').value;
+      const assignee = document.getElementById('modalAssignee').value;
+      if (!title || !device || !Object.hasOwn(incidentPriorityOrder, priority) || !incidentTeams.includes(assignee)) { creationError.textContent = 'Enter a summary and select a device in this branch and environment, priority, and assigned team.'; creationError.hidden = false; return; }
+      const at = new Date().toISOString();
+      const year = new Date().toLocaleDateString('en-GB', { timeZone: 'Asia/Manila', year: 'numeric' });
+      const sequence = Math.max(1000, ...incidents.map(item => Number(item.id.split('-').at(-1)) || 0)) + 1;
+      const id = `IR-${year}-${sequence}`;
+      const incident = { id, title, branch, environment, deviceId, priority, category: document.getElementById('modalCategory').value, assignee, status: 'assigned', createdAt: at, dueAt: incidentDueAt(priority, at), description: document.getElementById('modalDetails').value.trim(), resolution: null, verification: null, logs: [{ at, by: incidentActor, type: 'Incident created', notes: `Assigned to ${assignee}.`, from: '', to: 'assigned' }] };
+      incidents.push(incident);
+      const saved = persistIncidents();
+      selectedIncidentId = id;
+      document.getElementById('incidentSearch').value = '';
+      document.getElementById('incidentStatusFilter').value = 'active';
+      document.getElementById('incidentPriorityFilter').value = 'all';
+      renderIncidents();
+      closeIncidentDialog(modal);
+      showPage('incidents');
+      showToast(saved ? `${id} created and assigned.` : `${id} created in this tab only; browser storage unavailable.`);
+    });
+    renderIncidents();
+
+    // Local user directory and role configuration for this mockup.
+    const currentDemoUserId = 'USR-0001';
+    const userStorageKey = 'rosewatch-users-v1';
+    const userEnvironments = ['Production', 'Staging / Test'];
+    const userRoles = {
+      admin: { label: 'Administrator', summary: 'Manage users and all operations across branches and environments.', permissions: ['view', 'status', 'devices', 'create', 'logs', 'resolve', 'verify', 'reports', 'users'] },
+      supervisor: { label: 'Supervisor', summary: 'Oversee assigned operations, manage equipment, and verify incident resolutions.', permissions: ['view', 'status', 'devices', 'create', 'logs', 'resolve', 'verify', 'reports'] },
+      operator: { label: 'Operator', summary: 'Record daily camera status, create incidents, and record actions for assigned branches.', permissions: ['view', 'status', 'create', 'logs', 'reports'] },
+      technician: { label: 'Technician', summary: 'Investigate faults, record repair actions and proof, and resolve incidents in assigned branches.', permissions: ['view', 'create', 'logs', 'resolve'] },
+      viewer: { label: 'Viewer', summary: 'Read camera status, device information, incident history, and reports for assigned branches.', permissions: ['view', 'reports'] }
+    };
+    const userPermissionLabels = { view: 'View camera status and device information', status: 'Mark daily camera status', devices: 'Add and edit equipment', create: 'Create incident reports', logs: 'Add incident action logs and proof', resolve: 'Resolve incidents with proof', verify: 'Verify resolutions and reopen incidents', reports: 'View reports', users: 'Manage users and access assignments' };
+    const seedUsers = [
+      { id: 'USR-0001', name: 'Alex Mendoza', email: 'alex.mendoza@example.com', role: 'admin', team: 'Administration', status: 'active', branchScope: 'all', branches: [], environments: [...userEnvironments] },
+      { id: 'USR-0002', name: 'Maria Reyes', email: 'maria.reyes@example.com', role: 'supervisor', team: 'CCTV Operations', status: 'active', branchScope: 'all', branches: [], environments: ['Production'] },
+      { id: 'USR-0003', name: 'Ramon Santos', email: 'ramon.santos@example.com', role: 'technician', team: 'Network Support', status: 'active', branchScope: 'selected', branches: ['Makati Central', 'Quezon City'], environments: ['Production'] },
+      { id: 'USR-0004', name: 'Jessica Lim', email: 'jessica.lim@example.com', role: 'operator', team: 'CCTV Operations', status: 'active', branchScope: 'selected', branches: ['Makati Central'], environments: ['Production'] },
+      { id: 'USR-0005', name: 'Bea Garcia', email: 'bea.garcia@example.com', role: 'viewer', team: 'Branch Facilities', status: 'active', branchScope: 'selected', branches: ['Cebu IT Park'], environments: ['Production'] },
+      { id: 'USR-0006', name: 'Paolo Cruz', email: 'paolo.cruz@example.com', role: 'technician', team: 'Security Vendor', status: 'inactive', branchScope: 'selected', branches: ['Davao Downtown'], environments: ['Production'] }
+    ].map(user => ({ ...user, createdAt: '2026-10-22T06:00:00Z', updatedAt: '2026-10-22T06:00:00Z', logs: [{ at: '2026-10-22T06:00:00Z', actor: 'Demo setup', action: 'User registered', reason: 'Sample user record for review.', changes: [] }] }));
+    let users = seedUsers;
+    try {
+      const saved = localStorage.getItem(userStorageKey);
+      if (saved) {
+        const records = JSON.parse(saved);
+        const valid = Array.isArray(records) && records.every(user => user && typeof user.id === 'string' && /^USR-\d+$/.test(user.id) && typeof user.name === 'string' && typeof user.email === 'string' && Object.hasOwn(userRoles, user.role) && ['active', 'inactive'].includes(user.status) && ['all', 'selected'].includes(user.branchScope) && Array.isArray(user.branches) && user.branches.every(branch => deviceBranches.includes(branch)) && (user.branchScope === 'all' || user.branches.length) && Array.isArray(user.environments) && user.environments.length && user.environments.every(environment => userEnvironments.includes(environment)) && Array.isArray(user.logs) && user.logs.every(log => log && typeof log.reason === 'string' && Array.isArray(log.changes)));
+        const sessionUser = valid && records.find(user => user.id === currentDemoUserId);
+        if (!valid || new Set(records.map(user => user.id)).size !== records.length || new Set(records.map(user => user.email.toLowerCase())).size !== records.length || !sessionUser || sessionUser.status !== 'active' || sessionUser.role !== 'admin') throw new Error('Invalid user directory');
+        users = records;
+      }
+    } catch {
+      document.getElementById('userStorageNote').textContent = 'Saved users could not be read. Sample users are displayed; sign-in and server access enforcement are not connected.';
+    }
+    let selectedUserId = currentDemoUserId;
+    let editingUserId = null;
+    let userReturnFocus = null;
+    const userModal = document.getElementById('userModal');
+    const userForm = document.getElementById('userForm');
+    function currentDemoActor() { return document.getElementById('sessionUserName')?.textContent?.trim() || 'Alex Mendoza'; }
+    function userInitials(name) { return name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase(); }
+    function userStatusBadge(user) { return `<span class="status ${user.status === 'active' ? 'live' : 'unknown'}">${user.status === 'active' ? 'Active' : 'Inactive'}</span>`; }
+    function userBranchText(user) { return user.branchScope === 'all' ? 'All branches' : user.branches.join(', '); }
+    ['userRole', 'userRoleFilter'].forEach(id => document.getElementById(id).insertAdjacentHTML('beforeend', Object.entries(userRoles).map(([key, role]) => `<option value="${key}">${role.label}</option>`).join('')));
+    document.getElementById('userBranchFilter').insertAdjacentHTML('beforeend', deviceBranches.map(branch => `<option>${escapeHtml(branch)}</option>`).join(''));
+    document.getElementById('userBranchChoices').innerHTML = deviceBranches.map((branch, index) => `<label><input id="userBranchChoice-${index}" type="checkbox" value="${escapeHtml(branch)}">${escapeHtml(branch)}</label>`).join('');
+    document.getElementById('userPermissionTable').innerHTML = `<thead><tr><th scope="col">Permission</th>${Object.values(userRoles).map(role => `<th scope="col">${role.label}</th>`).join('')}</tr></thead><tbody>${Object.entries(userPermissionLabels).map(([key, label]) => `<tr><th scope="row">${label}</th>${Object.values(userRoles).map(role => `<td>${role.permissions.includes(key) ? '<span style="color:var(--teal);font-weight:800">Yes</span>' : '<span style="color:var(--muted)">—</span>'}</td>`).join('')}</tr>`).join('')}</tbody>`;
+
+    function renderUsers() {
+      const sessionUser = users.find(user => user.id === currentDemoUserId);
+      document.getElementById('sessionUserName').textContent = sessionUser.name;
+      document.getElementById('sessionUserRole').textContent = `${userRoles[sessionUser.role].label} · demo account`;
+      document.getElementById('sessionUserAvatar').textContent = userInitials(sessionUser.name);
+      incidentActor = sessionUser.name;
+      const metrics = [['Registered users', users.length], ['Active users', users.filter(user => user.status === 'active').length], ['Active administrators', users.filter(user => user.status === 'active' && user.role === 'admin').length], ['Users with selected branches', users.filter(user => user.branchScope === 'selected').length]];
+      document.getElementById('userMetrics').innerHTML = metrics.map(([label, count]) => `<article class="metric-card"><div class="metric-label">${label}</div><div class="metric-value">${count}</div></article>`).join('');
+      const term = document.getElementById('userSearch').value.trim().toLowerCase();
+      const role = document.getElementById('userRoleFilter').value;
+      const status = document.getElementById('userStatusFilter').value;
+      const branch = document.getElementById('userBranchFilter').value;
+      const visible = users.filter(user => [user.name, user.email, user.team].join(' ').toLowerCase().includes(term) && (role === 'all' || user.role === role) && (status === 'all' || user.status === status) && (branch === 'all' || user.branchScope === 'all' || user.branches.includes(branch)));
+      if (!visible.some(user => user.id === selectedUserId)) selectedUserId = visible[0]?.id;
+      document.getElementById('userResultCount').textContent = `${visible.length} of ${users.length} users · select a user to manage`;
+      document.getElementById('userTableBody').innerHTML = visible.map(user => `<tr class="${user.id === selectedUserId ? 'selected' : ''}"><td><div class="user-person"><div class="avatar">${escapeHtml(userInitials(user.name))}</div><div><button class="device-link" data-user-id="${escapeHtml(user.id)}"><strong>${escapeHtml(user.name)}${user.id === currentDemoUserId ? ' (you)' : ''}</strong></button><small>${escapeHtml(user.email)}</small></div></div></td><td><span class="role-tag">${userRoles[user.role].label}</span><small>${escapeHtml(user.team)}</small></td><td>${escapeHtml(userBranchText(user))}<small>${escapeHtml(user.environments.join(', '))}</small></td><td>${userStatusBadge(user)}</td></tr>`).join('') || '<tr><td colspan="4" class="matrix-empty">No users match these filters.</td></tr>';
+      renderUserDetail();
+    }
+    function renderUserDetail() {
+      const user = users.find(item => item.id === selectedUserId);
+      const panel = document.getElementById('userDetail');
+      if (!user) { panel.innerHTML = '<div class="detail-body"><h2 class="card-title">User profile</h2><p class="device-description">Select a user or change your filters.</p></div>'; return; }
+      const history = [...user.logs].reverse().map(log => `<div class="device-audit"><strong>${escapeHtml(log.action)} · ${escapeHtml(log.actor)}</strong><p>${escapeHtml(log.reason)}</p>${log.changes.length ? `<ul class="user-log-changes">${log.changes.map(change => `<li>${escapeHtml(change.label)}: ${escapeHtml(change.before)} → ${escapeHtml(change.after)}</li>`).join('')}</ul>` : ''}<time>${escapeHtml(incidentTime(log.at))}</time></div>`).join('');
+      const fields = [['User ID', user.id], ['Email address', user.email], ['Role', userRoles[user.role].label], ['Team', user.team], ['Branch access', userBranchText(user)], ['Environments', user.environments.join(', ')], ['Created', incidentTime(user.createdAt)], ['Last updated', incidentTime(user.updatedAt)]];
+      panel.innerHTML = `<div class="card-head"><div><h2 class="card-title">${escapeHtml(user.name)}</h2><p class="card-subtitle">${escapeHtml(user.id)}${user.id === currentDemoUserId ? ' · Current demo account' : ''}</p></div>${userStatusBadge(user)}</div><div class="detail-body"><div class="detail-actions"><button class="btn btn-primary" data-user-action="edit">Edit user</button><button class="btn ${user.status === 'active' ? 'btn-danger' : ''}" data-user-action="toggle"${user.id === currentDemoUserId ? ' disabled' : ''}>${user.status === 'active' ? 'Deactivate' : 'Activate'} user</button></div>${user.id === currentDemoUserId ? '<p class="device-description">The current demo account must remain an active administrator.</p>' : ''}<dl class="asset-fields">${fields.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl><div class="section-label">Assigned role permissions</div><p class="device-description">${escapeHtml(userRoles[user.role].summary)}</p>${userRoles[user.role].permissions.map(key => `<div class="user-permission">${userPermissionLabels[key]}</div>`).join('')}<div class="section-label">Account change history (${user.logs.length})</div>${history}</div>`;
+    }
+    ['userSearch', 'userRoleFilter', 'userStatusFilter', 'userBranchFilter'].forEach(id => document.getElementById(id).addEventListener('input', renderUsers));
+    document.getElementById('userTableBody').addEventListener('click', event => {
+      const button = event.target.closest('[data-user-id]');
+      if (button) { selectedUserId = button.dataset.userId; renderUsers(); }
+    });
+    document.getElementById('userDetail').addEventListener('click', event => {
+      const button = event.target.closest('[data-user-action]');
+      const user = users.find(item => item.id === selectedUserId);
+      if (!button || !user) return;
+      openUserForm(user.id, button.dataset.userAction === 'toggle' ? (user.status === 'active' ? 'inactive' : 'active') : undefined);
+    });
+    function refreshUserAccessFields() {
+      const role = document.getElementById('userRole').value;
+      const admin = role === 'admin';
+      document.getElementById('userRoleHelp').textContent = userRoles[role]?.summary || '';
+      const scope = document.getElementById('userScope');
+      if (admin) scope.value = 'all';
+      scope.disabled = admin;
+      const selected = scope.value === 'selected';
+      document.getElementById('userBranchGroup').hidden = !selected;
+      deviceBranches.forEach((branch, index) => document.getElementById(`userBranchChoice-${index}`).disabled = !selected);
+      ['userEnvironmentProduction', 'userEnvironmentTest'].forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (admin) checkbox.checked = true;
+        checkbox.disabled = admin;
+      });
+    }
+    function openUserForm(id, nextStatus) {
+      const user = users.find(item => item.id === id);
+      editingUserId = user?.id || null;
+      userReturnFocus = document.activeElement;
+      userForm.reset();
+      const values = user || { name: '', email: '', role: 'viewer', team: 'CCTV Operations', status: 'active', branchScope: 'selected', branches: [], environments: ['Production'] };
+      const ownAccount = editingUserId === currentDemoUserId;
+      document.getElementById('userModalTitle').textContent = nextStatus ? `${nextStatus === 'active' ? 'Activate' : 'Deactivate'} user` : user ? 'Edit user' : 'Add user';
+      document.getElementById('userFormError').hidden = true;
+      document.getElementById('userName').value = values.name;
+      document.getElementById('userEmail').value = values.email;
+      document.getElementById('userRole').value = values.role;
+      document.getElementById('userRole').disabled = ownAccount;
+      document.getElementById('userTeam').value = values.team;
+      document.getElementById('userStatus').value = nextStatus || values.status;
+      document.getElementById('userStatus').disabled = ownAccount;
+      document.getElementById('userScope').value = values.branchScope;
+      document.getElementById('userChangeReason').value = '';
+      deviceBranches.forEach((branch, index) => document.getElementById(`userBranchChoice-${index}`).checked = values.branches.includes(branch));
+      document.getElementById('userEnvironmentProduction').checked = values.environments.includes('Production');
+      document.getElementById('userEnvironmentTest').checked = values.environments.includes('Staging / Test');
+      refreshUserAccessFields();
+      userModal.classList.add('open');
+      document.getElementById(nextStatus ? 'userChangeReason' : 'userName').focus();
+    }
+    function closeUserForm() {
+      userModal.classList.remove('open');
+      if (userReturnFocus?.isConnected) userReturnFocus.focus();
+      else document.getElementById('addUserButton').focus();
+    }
+    document.getElementById('addUserButton').addEventListener('click', () => openUserForm());
+    document.getElementById('userRole').addEventListener('change', refreshUserAccessFields);
+    document.getElementById('userScope').addEventListener('change', refreshUserAccessFields);
+    document.querySelectorAll('[data-user-close]').forEach(button => button.addEventListener('click', closeUserForm));
+    userModal.addEventListener('click', event => { if (event.target === userModal) closeUserForm(); });
+    document.addEventListener('keydown', event => {
+      if (!userModal.classList.contains('open')) return;
+      if (event.key === 'Escape') { closeUserForm(); return; }
+      if (event.key !== 'Tab') return;
+      const focusable = [...userModal.querySelectorAll('button, input, select, textarea')].filter(control => !control.disabled && !control.closest('[hidden]'));
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    });
+    function userSnapshot(user) {
+      return { name: user.name, email: user.email, role: userRoles[user.role].label, team: user.team, status: user.status === 'active' ? 'Active' : 'Inactive', branchScope: user.branchScope === 'all' ? 'All branches' : 'Selected branches', branches: user.branchScope === 'all' ? 'All branches' : [...user.branches].sort().join(', '), environments: [...user.environments].sort().join(', ') };
+    }
+    function saveUserRecord(id, fields) {
+      const oldUser = id ? users.find(user => user.id === id) : null;
+      if (id && !oldUser) return { error: 'The selected user could not be found.' };
+      const name = String(fields.name || '').trim();
+      const email = String(fields.email || '').trim().toLowerCase();
+      const reason = String(fields.reason || '').trim();
+      if (name.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !reason) return { error: 'Enter a full name, valid email address, and reason for this change.' };
+      if (users.some(user => user.id !== id && user.email.toLowerCase() === email)) return { error: 'This email address is already assigned to another user.' };
+      if (!Object.hasOwn(userRoles, fields.role) || !['active', 'inactive'].includes(fields.status) || !['all', 'selected'].includes(fields.branchScope) || !['Administration', ...incidentTeams].includes(fields.team)) return { error: 'Choose a valid role, team, account status, and branch access.' };
+      const admin = fields.role === 'admin';
+      const branchScope = admin ? 'all' : fields.branchScope;
+      const branches = branchScope === 'all' ? [] : [...new Set(fields.branches || [])];
+      const environments = admin ? [...userEnvironments] : [...new Set(fields.environments || [])];
+      if ((branchScope === 'selected' && !branches.length) || branches.some(branch => !deviceBranches.includes(branch))) return { error: 'Select at least one valid branch for this user.' };
+      if (!environments.length || environments.some(environment => !userEnvironments.includes(environment))) return { error: 'Select at least one valid environment.' };
+      const activeAdmins = users.filter(user => user.role === 'admin' && user.status === 'active' && user.id !== id).length;
+      if (!activeAdmins && !(admin && fields.status === 'active')) return { error: 'Keep at least one active administrator in the user directory.' };
+      if (id === currentDemoUserId && (!admin || fields.status !== 'active')) return { error: 'The current demo account must remain an active administrator.' };
+      const at = new Date().toISOString();
+      const nextId = id || `USR-${String(Math.max(0, ...users.map(user => Number(user.id.slice(4)) || 0)) + 1).padStart(4, '0')}`;
+      const next = { id: nextId, name, email, role: fields.role, team: fields.team, status: fields.status, branchScope, branches, environments, createdAt: oldUser?.createdAt || at, updatedAt: at };
+      const before = oldUser ? userSnapshot(oldUser) : {};
+      const after = userSnapshot(next);
+      const labels = { name: 'Name', email: 'Email', role: 'Role', team: 'Team', status: 'Account status', branchScope: 'Branch access', branches: 'Assigned branches', environments: 'Environments' };
+      const changes = Object.keys(after).filter(key => before[key] !== after[key]).map(key => ({ label: labels[key], before: before[key] || 'Not set', after: after[key] }));
+      const action = !oldUser ? 'User registered' : oldUser.status !== next.status ? (next.status === 'active' ? 'User activated' : 'User deactivated') : oldUser.role !== next.role ? 'Role changed' : 'User updated';
+      next.logs = [...(oldUser?.logs || []), { at, actor: currentDemoActor(), action, reason, changes }];
+      const candidate = oldUser ? users.map(user => user.id === id ? next : user) : [...users, next];
+      try { localStorage.setItem(userStorageKey, JSON.stringify(candidate)); }
+      catch {
+        document.getElementById('userStorageNote').textContent = 'User changes could not be saved in this browser. The directory has not changed; keep the form open and retry.';
+        return { error: 'Browser storage is unavailable or full. The user was not changed. Retry when storage is available.' };
+      }
+      users = candidate;
+      document.getElementById('userStorageNote').textContent = 'Demo configuration · user records are saved in this browser. Sign-in, email invitations, and server access enforcement are not connected.';
+      return { user: next };
+    }
+    userForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const result = saveUserRecord(editingUserId, { name: document.getElementById('userName').value, email: document.getElementById('userEmail').value, role: document.getElementById('userRole').value, team: document.getElementById('userTeam').value, status: document.getElementById('userStatus').value, branchScope: document.getElementById('userScope').value, branches: deviceBranches.filter((branch, index) => document.getElementById(`userBranchChoice-${index}`).checked), environments: userEnvironments.filter((environment, index) => document.getElementById(index === 0 ? 'userEnvironmentProduction' : 'userEnvironmentTest').checked), reason: document.getElementById('userChangeReason').value });
+      if (result.error) { document.getElementById('userFormError').textContent = result.error; document.getElementById('userFormError').hidden = false; return; }
+      selectedUserId = result.user.id;
+      document.getElementById('userSearch').value = '';
+      ['userRoleFilter', 'userStatusFilter', 'userBranchFilter'].forEach(id => document.getElementById(id).value = 'all');
+      renderUsers();
+      closeUserForm();
+      showToast('User saved. Account change history updated.');
+    });
+    renderUsers();
+  </script>
+</body>
+</html>
