@@ -123,7 +123,6 @@ assert.equal(page.element('dashboardIncidentCount').textContent, 4);
 
 // New incidents can reference managed devices such as NVRs, not just cameras.
 page.element('modalBranch').value = 'Makati Central';
-page.element('modalEnvironment').value = 'Production';
 page.run('refreshIncidentDeviceOptions()');
 assert.match(page.element('modalCamera').innerHTML, /NVR-MKT-02/);
 page.element('modalCamera').value = 'NVR-MKT-02';

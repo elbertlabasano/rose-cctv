@@ -134,7 +134,7 @@
     }
 
     .mobile-menu { display: none; border: 0; background: transparent; color: var(--ink); }
-    .environment { display: flex; gap: 10px; align-items: center; }
+    .workspace-context { display: flex; gap: 10px; align-items: center; }
     .env-copy small { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
     .env-copy strong { font-size: 14px; }
     .env-pill { padding: 5px 8px; border-radius: 7px; color: var(--teal); background: var(--teal-soft); font-size: 10px; font-weight: 750; letter-spacing: .04em; }
@@ -517,17 +517,16 @@
       .form-grid { grid-template-columns: 1fr; }
       .field.full { grid-column: auto; }
       .top-actions .icon-btn:first-child { display: none; }
-      .environment .env-pill { display: none; }
+      .workspace-context .env-pill { display: none; }
     }
   </style>
+  <link rel="stylesheet" href="assets/brand-theme.css">
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="brand-mark">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8.5h11.5a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H4z"/><path d="m18.5 10 3-1.5v7l-3-1.5M8 15.5V19m-3 0h6"/></svg>
-        </div>
+        <img class="brand-logo" src="assets/rose-bakeshop-logo.png" alt="Rose Bakeshop — Since 1983" width="442" height="320">
         <div><div class="brand-name">RoseWatch</div><div class="brand-sub">CCTV Operations</div></div>
       </div>
 
@@ -535,8 +534,13 @@
       <nav aria-label="Primary navigation">
         <button class="nav-item active" data-page="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Overview</button>
         <button class="nav-item" data-page="cameras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8.5h11.5a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H4z"/><path d="m18.5 10 3-1.5v7l-3-1.5M8 15.5V19m-3 0h6"/></svg>Cameras <span class="nav-badge">3</span></button>
+<button class="nav-item" data-page="checklist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 12l2 2 4-4M5 3h14v18H5z"/></svg>Today&#8217;s checklist</button>
+<button class="nav-item" data-page="evidence"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 3h18v18H3zM3 16l5-5 4 4 3-3 6 6"/></svg>Screenshot history</button>
+<button class="nav-item" data-page="outages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 7v5l3 2M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0"/></svg>Outage tracking</button>
+<button class="nav-item" data-page="branches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21V7l8-4 8 4v14M9 21v-5h6v5"/></svg>Branch dashboard</button>
         <button class="nav-item" data-page="process"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 12h4a4 4 0 0 0 4-4V5m-4 7a4 4 0 0 1 4 4v3"/></svg>Process flow</button>
-        <button class="nav-item" data-page="incidents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 2.8 19h18.4z"/><path d="M12 9v4m0 3h.01"/></svg>Incidents <span class="nav-badge">4</span></button>
+        <button class="nav-item" data-page="incidents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v5a2 2 0 0 0 0 4v5H4v-5a2 2 0 0 0 0-4z"/><path d="M15 5v3m0 3v2m0 3v3"/></svg>Incidents <span class="nav-badge">4</span></button>
+        <button class="nav-item" data-page="tickets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v5a2 2 0 0 0 0 4v5H4v-5a2 2 0 0 0 0-4z"/><path d="M15 5v3m0 3v2m0 3v3"/></svg>Tickets <span class="nav-badge" id="ticketNavCount">0</span></button>
         <button class="nav-item" data-page="reminders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>Reminders</button>
       </nav>
 
@@ -544,8 +548,7 @@
       <nav aria-label="Administration navigation">
         <button class="nav-item" data-page="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m2-16a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 4v2"/></svg>User management</button>
         <button class="nav-item" data-page="devices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01M12 7h5m-5 10h5"/></svg>Device management</button>
-        <button class="nav-item" data-page="process"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V9m6 11V4m6 16v-7m4 7H2"/></svg>Reports</button>
-        <button class="nav-item" data-page="cameras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.14.37.35.7.6 1 .3.28.68.42 1.1.4h.1v4h-.1a1.7 1.7 0 0 0-1.7.6z"/></svg>Configuration</button>
+        <button class="nav-item" data-page="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V9m6 11V4m6 16v-7m4 7H2"/></svg>Reports</button>
       </nav>
 
       <div class="sidebar-foot">
@@ -555,10 +558,9 @@
 
     <main class="main">
       <header class="topbar">
-        <div class="environment">
+        <div class="workspace-context">
           <button class="mobile-menu" id="menuButton" aria-label="Open menu">☰</button>
-          <div class="env-copy"><small>Environment</small><strong>Philippines Operations</strong></div>
-          <span class="env-pill">PRODUCTION</span>
+          <div class="env-copy"><small>Workspace</small><strong>Philippines Operations</strong></div>
         </div>
         <div class="top-actions">
           <button class="icon-btn" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
@@ -603,15 +605,21 @@
           </article>
         </section>
 
-        <section class="page" id="page-cameras">
-          <div class="page-head"><div><div class="eyebrow">Daily status register</div><h1>Camera status by day</h1><p>Review each camera's daily operational state without opening a video feed</p></div><button class="btn">↓ Export CSV</button></div>
+<section class="page" id="page-checklist"><div id="ops-checklist"></div></section><section class="page" id="page-evidence"><div id="ops-evidence"></div></section><section class="page" id="page-outages"><div id="ops-outages"></div></section><section class="page" id="page-branches"><div id="ops-branches"></div></section><section class="page" id="page-reports"><div id="ops-reports"></div></section>        <section class="page" id="page-cameras">
+          <div class="page-head"><div><div class="eyebrow">Daily status register</div><h1>Camera status by day</h1><p>Select a day to mark status, capture a screenshot, or create a ticket</p></div><button class="btn">↓ Export CSV</button></div>
           <article class="card">
-            <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="cameraSearch" type="search" placeholder="Search camera, branch or location"></div><select class="select" id="branchFilter" aria-label="Filter by branch"><option value="all">All branches</option><option>Makati Central</option><option>Quezon City</option><option>Cebu IT Park</option><option>Davao Downtown</option></select><select class="select" id="statusFilter" aria-label="Filter by current status"><option value="all">All current statuses</option><option value="live">Live</option><option value="down">Down</option><option value="degraded">Degraded</option><option value="maintenance">Maintenance</option></select><select class="select" aria-label="Select month"><option>October 2026</option><option>September 2026</option><option>August 2026</option></select></div>
-            <div class="matrix-summary"><div><strong>October 2026 status sheet</strong><p>One daily result per camera · through 22 October</p></div><div class="matrix-legend"><span><i style="background:var(--teal)"></i>Live</span><span><i style="background:var(--red)"></i>Down</span><span><i style="background:var(--amber)"></i>Degraded</span><span><i style="background:var(--blue)"></i>Maintenance</span><span><i style="background:#c9d1d3"></i>No data</span></div></div>
+            <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="cameraSearch" type="search" placeholder="Search camera, branch or location"></div><select class="select" id="branchFilter" aria-label="Filter by branch"><option value="all">All branches</option><option>Makati Central</option><option>Quezon City</option><option>Cebu IT Park</option><option>Davao Downtown</option></select><select class="select" id="statusFilter" aria-label="Filter by current status"><option value="all">All current statuses</option><option value="live">Online</option><option value="down">Offline</option><option value="degraded">Degraded</option><option value="maintenance">Maintenance</option></select><select class="select" aria-label="Select month"><option>October 2026</option><option>September 2026</option><option>August 2026</option></select></div>
+            <div class="matrix-summary"><div><strong>October 2026 status sheet</strong><p>One daily result per camera · through 25 October</p></div><div class="matrix-legend"><span><i style="background:var(--teal)"></i>Online</span><span><i style="background:var(--red)"></i>Offline</span><span><i style="background:var(--amber)"></i>Degraded</span><span><i style="background:var(--blue)"></i>Maintenance</span><span><i style="background:#c9d1d3"></i>No data</span></div></div>
             <div class="matrix-scroll" id="matrixScroll"><table class="status-matrix" id="statusMatrix" aria-label="Daily camera status matrix"><thead id="statusMatrixHead"></thead><tbody id="statusMatrixBody"></tbody></table></div>
+            <div class="matrix-summary"><p>Click a day to update its record. <strong>▣</strong> Screenshot attached · <strong>▤</strong> External ticket linked. Current status follows the latest day shown.</p><p>Daily records, screenshots, and tickets are saved in this browser.</p></div>
           </article>
         </section>
 
+        <section class="page" id="page-tickets">
+          <div class="page-head"><div><div class="eyebrow">Service requests</div><h1>Tickets</h1><p>External ticket references, separate from incident reports.</p></div></div>
+          <p class="device-demo-note">Tickets are created and managed externally. Select Create ticket in a camera daily record to submit it to the external system. No ticketing service is connected yet.</p>
+          <article class="card"><div class="toolbar"><div class="search"><input id="ticketSearch" type="search" aria-label="Search tickets" placeholder="Search ticket, camera or branch"></div><select id="ticketFilter" class="select" aria-label="Ticket status"><option value="all">All tickets</option><option value="open">Open</option><option value="in-progress">In progress</option><option value="closed">Closed</option></select></div><div id="ticketList"></div></article>
+        </section>
         <section class="page" id="page-users">
           <div class="page-head"><div><div class="eyebrow">People & access</div><h1>User management</h1><p>Manage user profiles, roles, branch assignments, and account status</p></div><button class="btn btn-primary" id="addUserButton">＋ Add user</button></div>
           <p class="device-demo-note" id="userStorageNote">Demo configuration · user records are saved in this browser. Sign-in, email invitations, and server access enforcement are not connected.</p>
@@ -624,7 +632,7 @@
             </article>
             <article class="card" id="userDetail" aria-label="Selected user profile"></article>
           </div>
-          <article class="card" style="margin-top:18px"><div class="card-head"><div><h2 class="card-title">Role permissions</h2><p class="card-subtitle">Intended access for each role, within assigned branches and environments</p></div></div><div class="device-table-wrap"><table class="device-table user-permission-table" id="userPermissionTable" aria-label="Role permission reference"></table></div></article>
+          <article class="card" style="margin-top:18px"><div class="card-head"><div><h2 class="card-title">Role permissions</h2><p class="card-subtitle">Intended access for each role, within assigned branches</p></div></div><div class="device-table-wrap"><table class="device-table user-permission-table" id="userPermissionTable" aria-label="Role permission reference"></table></div></article>
         </section>
 
         <section class="page" id="page-devices">
@@ -662,14 +670,14 @@
               <div class="detail-panel"><h3 id="detailTitle">01 · Detect camera state</h3><div class="detail-list"><div class="detail-item"><small>Owner</small><strong id="detailOwner">Monitoring engine</strong></div><div class="detail-item"><small>Target</small><strong id="detailSla">Every 60 seconds</strong></div><div class="detail-item"><small>Output</small><strong id="detailOutput">Health event</strong></div></div></div>
             </article>
             <aside class="card">
-              <div class="card-head"><div><h2 class="card-title">Automation rules</h2><p class="card-subtitle">Production environment</p></div></div>
+              <div class="card-head"><div><h2 class="card-title">Automation rules</h2><p class="card-subtitle">Camera monitoring</p></div></div>
               <div class="rule-list"><div class="rule"><div class="rule-top"><strong>Downtime grace period</strong><button class="toggle on" aria-label="Toggle downtime grace period"></button></div><p>Wait 3 consecutive failed checks before marking a camera down.</p></div><div class="rule"><div class="rule-top"><strong>Automatic incident creation</strong><button class="toggle on" aria-label="Toggle incident creation"></button></div><p>Create a high-priority incident after five minutes of confirmed downtime.</p></div><div class="rule"><div class="rule-top"><strong>Repeat-fault escalation</strong><button class="toggle on" aria-label="Toggle repeat fault escalation"></button></div><p>Escalate when the same camera fails twice within seven days.</p></div><div class="rule"><div class="rule-top"><strong>Auto-close after recovery</strong><button class="toggle" aria-label="Toggle auto close"></button></div><p>Disabled: a responsible person must verify critical incident resolution.</p></div></div>
             </aside>
           </div>
         </section>
 
         <section class="page" id="page-incidents">
-          <div class="page-head"><div><div class="eyebrow">Response center</div><h1>Incident management</h1><p id="incidentSummary">Action logs, resolutions, and verification history</p></div><button class="btn btn-primary open-incident">＋ Create incident</button></div>
+          <div class="page-head"><div><div class="eyebrow">Response center</div><h1>Incident management</h1><p id="incidentSummary">Action logs, resolutions, and verification history</p></div><button class="btn btn-primary open-incident">＋ Create ticket</button></div>
           <p class="device-demo-note" id="incidentStorageNote">Demo workspace · incident reports and history are saved in this browser.</p>
           <div class="metrics" id="incidentMetrics"></div>
           <div class="incident-layout">
@@ -696,7 +704,7 @@
   </div>
 
   <div class="modal-backdrop" id="incidentModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="modal"><div class="modal-head"><div><h2 id="modalTitle">Create incident report</h2><div class="card-subtitle">Document a new camera or infrastructure issue</div></div><button class="close-btn" data-close aria-label="Close">×</button></div><form id="incidentForm"><div class="modal-body"><div class="form-grid"><div class="field"><label for="modalBranch">Branch</label><select id="modalBranch" required><option value="">Select branch</option><option>Makati Central</option><option>Quezon City</option><option>Cebu IT Park</option><option>Davao Downtown</option></select></div><div class="field"><label for="modalCamera">Camera / device</label><select id="modalCamera" required><option value="">Select device</option><option>CAM-MKT-012 · Loading Bay</option><option>CAM-QC-004 · Main Entrance</option><option>CAM-CBU-021 · Stock Room</option></select></div><div class="field"><label for="modalPriority">Priority</label><select id="modalPriority"><option>Medium</option><option>High</option><option>Critical</option><option>Low</option></select></div><div class="field"><label for="modalCategory">Category</label><select id="modalCategory"><option>Camera offline</option><option>Unstable video</option><option>Network fault</option><option>Power issue</option><option>Storage issue</option></select></div><div class="field full"><label for="modalSummary">Incident summary</label><input id="modalSummary" required placeholder="Briefly describe the issue"></div><div class="field full"><label for="modalDetails">Details / initial observation</label><textarea id="modalDetails" placeholder="Add relevant symptoms, actions already taken, or other context"></textarea></div><div class="field"><label for="modalAssignee">Assign to</label><select id="modalAssignee"><option>CCTV Operations</option><option>Network Support</option><option>Branch Facilities</option><option>Security Vendor</option></select></div><div class="field"><label for="modalEnvironment">Environment</label><select id="modalEnvironment"><option>Production</option><option>Staging / Test</option></select></div></div></div><div class="modal-foot"><button type="button" class="btn" data-close>Cancel</button><button type="submit" class="btn btn-primary">Create incident</button></div></form></div>
+    <div class="modal"><div class="modal-head"><div><h2 id="modalTitle">Create incident report</h2><div class="card-subtitle">Document a new camera or infrastructure issue</div></div><button class="close-btn" data-close aria-label="Close">×</button></div><form id="incidentForm"><div class="modal-body"><div class="form-grid"><div class="field"><label for="modalBranch">Branch</label><select id="modalBranch" required><option value="">Select branch</option><option>Makati Central</option><option>Quezon City</option><option>Cebu IT Park</option><option>Davao Downtown</option></select></div><div class="field"><label for="modalCamera">Camera / device</label><select id="modalCamera" required><option value="">Select device</option><option>CAM-MKT-012 · Loading Bay</option><option>CAM-QC-004 · Main Entrance</option><option>CAM-CBU-021 · Stock Room</option></select></div><div class="field"><label for="modalPriority">Priority</label><select id="modalPriority"><option>Medium</option><option>High</option><option>Critical</option><option>Low</option></select></div><div class="field"><label for="modalCategory">Category</label><select id="modalCategory"><option>Camera offline</option><option>Unstable video</option><option>Network fault</option><option>Power issue</option><option>Storage issue</option></select></div><div class="field full"><label for="modalSummary">Incident summary</label><input id="modalSummary" required placeholder="Briefly describe the issue"></div><div class="field full"><label for="modalSignedDocument">Signed incident report document URL</label><input id="modalSignedDocument" type="url" maxlength="2000" placeholder="https://.../signed-incident-report.pdf"><small class="card-subtitle">Link to the signed document in your document storage.</small></div><div class="field full"><label for="modalDetails">Details / initial observation</label><textarea id="modalDetails" placeholder="Add relevant symptoms, actions already taken, or other context"></textarea></div><div class="field"><label for="modalAssignee">Assign to</label><select id="modalAssignee"><option>CCTV Operations</option><option>Network Support</option><option>Branch Facilities</option><option>Security Vendor</option></select></div></div></div><div class="modal-foot"><button type="button" class="btn" data-close>Cancel</button><button type="submit" class="btn btn-primary">Create incident</button></div></form></div>
   </div>
   <div class="modal-backdrop" id="incidentWorkflowModal" role="dialog" aria-modal="true" aria-labelledby="workflowTitle">
     <div class="modal">
@@ -732,32 +740,30 @@
     <div class="modal">
       <div class="modal-head"><div><h2 id="deviceModalTitle">Add device</h2><p class="card-subtitle">Register equipment and its connections</p></div><button type="button" class="close-btn" data-device-close aria-label="Close device form">×</button></div>
       <form id="deviceForm">
-        <div class="modal-body"><div class="form-grid">
-          <div class="field"><label for="deviceAssetId">Asset ID *</label><input id="deviceAssetId" required maxlength="50" placeholder="DVR-MKT-001" pattern="[A-Za-z0-9_-]+" title="Use letters, numbers, hyphens or underscores"></div>
-          <div class="field"><label for="deviceName">Device name *</label><input id="deviceName" required maxlength="100" placeholder="Ground floor recorder"></div>
-          <div class="field"><label for="deviceType">Device type *</label><select id="deviceType" required></select></div>
-          <div class="field"><label for="deviceBranch">Branch *</label><select id="deviceBranch" required></select></div>
-          <div class="field"><label for="deviceEnvironment">Environment</label><select id="deviceEnvironment"><option>Production</option><option>Staging / Test</option></select></div>
-          <div class="field"><label for="deviceLocation">Location</label><input id="deviceLocation" maxlength="100" placeholder="Security office / rack 1"></div>
-          <div class="field"><label for="deviceBrand">Brand</label><input id="deviceBrand" maxlength="60" placeholder="Manufacturer"></div>
-          <div class="field"><label for="deviceModel">Model</label><input id="deviceModel" maxlength="80" placeholder="Model number"></div>
-          <div class="field"><label for="deviceSerial">Serial number</label><input id="deviceSerial" maxlength="80"></div>
-          <div class="field"><label for="deviceIp">IPv4 address (optional)</label><input id="deviceIp" maxlength="15" placeholder="192.168.10.20"><small class="card-subtitle">Leave blank for analog cameras and passive equipment.</small></div>
-          <div class="field"><label for="deviceStatus">Current status *</label><select id="deviceStatus"><option value="unknown">Unknown</option><option value="live">Online</option><option value="down">Down</option><option value="degraded">Degraded</option><option value="maintenance">Maintenance</option></select></div>
-          <div class="field"><label for="deviceOwner">Responsible team</label><input id="deviceOwner" maxlength="100" placeholder="CCTV Operations"></div>
-          <div class="field"><label for="deviceParent">Connected to</label><select id="deviceParent"><option value="">Standalone / not assigned</option></select></div>
-          <div class="field"><label for="deviceChannel">Recorder channel (optional)</label><input id="deviceChannel" type="number" min="1" max="256" step="1"><small class="card-subtitle">For cameras connected to a DVR or NVR.</small></div>
-          <div class="device-form-group" id="recorderFields" hidden>
+        <div class="modal-body"><div class="device-form-sections"><details class="device-accordion" id="deviceSection-identity" open><summary><span><strong>Device details</strong><small>Identity, branch and manufacturer</small></span><span class="accordion-chevron" aria-hidden="true">&#8964;</span></summary><div class="form-grid"><div class="field"><label for="deviceAssetId">Asset ID *</label><input id="deviceAssetId" required maxlength="50" placeholder="DVR-MKT-001" pattern="[A-Za-z0-9_-]+" title="Use letters, numbers, hyphens or underscores"></div>
+<div class="field"><label for="deviceName">Device name *</label><input id="deviceName" required maxlength="100" placeholder="Ground floor recorder"></div>
+<div class="field"><label for="deviceType">Device type *</label><select id="deviceType" required></select></div>
+<div class="field"><label for="deviceBranch">Branch *</label><select id="deviceBranch" required></select></div>
+
+<div class="field"><label for="deviceLocation">Location</label><input id="deviceLocation" maxlength="100" placeholder="Security office / rack 1"></div>
+<div class="field"><label for="deviceBrand">Brand</label><input id="deviceBrand" maxlength="60" placeholder="Manufacturer"></div>
+<div class="field"><label for="deviceModel">Model</label><input id="deviceModel" maxlength="80" placeholder="Model number"></div>
+<div class="field"><label for="deviceSerial">Serial number</label><input id="deviceSerial" maxlength="80"></div></div></details>
+<details class="device-accordion" id="deviceSection-connections"><summary><span><strong>Connections & storage</strong><small>Network, recorder and channel settings</small></span><span class="accordion-chevron" aria-hidden="true">&#8964;</span></summary><div class="form-grid"><div class="field"><label for="deviceIp">IPv4 address (optional)</label><input id="deviceIp" maxlength="15" placeholder="192.168.10.20"><small class="card-subtitle">Leave blank for analog cameras and passive equipment.</small></div>
+<div class="field"><label for="deviceParent">Connected to</label><select id="deviceParent"><option value="">Standalone / not assigned</option></select></div>
+<div class="field"><label for="deviceChannel">Recorder channel (optional)</label><input id="deviceChannel" type="number" min="1" max="256" step="1"><small class="card-subtitle">For cameras connected to a DVR or NVR.</small></div>
+<div class="device-form-group" id="recorderFields" hidden>
             <div class="field"><label for="deviceChannels">Recorder channel capacity *</label><input id="deviceChannels" type="number" min="1" max="256" step="1" value="16"></div>
             <div class="field"><label for="deviceStorage">Installed storage (TB)</label><input id="deviceStorage" type="number" min="0" max="10000" step="0.1" value="4"></div>
             <div class="field full"><label for="deviceDiskHealth">Recorder storage health</label><select id="deviceDiskHealth"><option>Unknown</option><option>Healthy</option><option>Warning</option><option>Failed</option></select></div>
-          </div>
-          <div class="field"><label for="deviceInstalled">Installation date</label><input id="deviceInstalled" type="date"></div>
-          <div class="field"><label for="deviceWarranty">Warranty ends</label><input id="deviceWarranty" type="date"></div>
-          <div class="field full"><label for="deviceNotes">Asset notes</label><textarea id="deviceNotes" maxlength="1000" placeholder="Maintenance instructions, vendor contact, or equipment notes"></textarea></div>
-          <div class="field full"><label for="deviceReason">Reason / action taken *</label><textarea id="deviceReason" required maxlength="1000" placeholder="Explain this registration or change, including any status update"></textarea></div>
-          <p class="device-form-note field full">Saving records the current status, your name, time, and reason in the device action log. Linked equipment is shown for reference; its status must be checked separately.</p>
-        </div><p id="deviceFormError" class="form-error" role="alert" hidden></p></div>
+          </div></div></details>
+<details class="device-accordion" id="deviceSection-maintenance"><summary><span><strong>Status & maintenance</strong><small>Status, ownership, dates and change notes</small></span><span class="accordion-chevron" aria-hidden="true">&#8964;</span></summary><div class="form-grid"><div class="field"><label for="deviceStatus">Current status *</label><select id="deviceStatus"><option value="unknown">Unknown</option><option value="live">Online</option><option value="down">Down</option><option value="degraded">Degraded</option><option value="maintenance">Maintenance</option></select></div>
+<div class="field"><label for="deviceOwner">Responsible team</label><input id="deviceOwner" maxlength="100" placeholder="CCTV Operations"></div>
+<div class="field"><label for="deviceInstalled">Installation date</label><input id="deviceInstalled" type="date"></div>
+<div class="field"><label for="deviceWarranty">Warranty ends</label><input id="deviceWarranty" type="date"></div>
+<div class="field full"><label for="deviceNotes">Asset notes</label><textarea id="deviceNotes" maxlength="1000" placeholder="Maintenance instructions, vendor contact, or equipment notes"></textarea></div>
+<div class="field full"><label for="deviceReason">Reason / action taken *</label><textarea id="deviceReason" required maxlength="1000" placeholder="Explain this registration or change, including any status update"></textarea></div>
+<p class="device-form-note field full">Saving records the current status, your name, time, and reason in the device action log. Linked equipment is shown for reference; its status must be checked separately.</p></div></details></div><p id="deviceFormError" class="form-error" role="alert" hidden></p></div>
         <div class="modal-foot"><button type="button" class="btn" data-device-close>Cancel</button><button type="submit" class="btn btn-primary">Save device</button></div>
       </form>
     </div>
@@ -773,7 +779,6 @@
         <div class="field"><label for="userStatus">Account status *</label><select id="userStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
         <div class="field"><label for="userScope">Branch access *</label><select id="userScope"><option value="all">All branches</option><option value="selected">Selected branches</option></select></div>
         <fieldset class="user-fieldset" id="userBranchGroup" hidden><legend>Assigned branches *</legend><div class="user-checkboxes" id="userBranchChoices"></div></fieldset>
-        <fieldset class="user-fieldset"><legend>Assigned environments *</legend><div class="user-checkboxes"><label><input type="checkbox" id="userEnvironmentProduction" value="Production">Production</label><label><input type="checkbox" id="userEnvironmentTest" value="Staging / Test">Staging / Test</label></div></fieldset>
         <div class="field full"><label for="userChangeReason">Reason for this change *</label><textarea id="userChangeReason" required maxlength="1000" placeholder="Record why this user is being added, updated, activated, or deactivated"></textarea></div>
       </div><p class="device-form-note" style="margin-top:14px" id="userFormHelp">Saving records your name, time, and changes in this user's history. User sign-in is not connected in this mockup.</p><p class="form-error" id="userFormError" role="alert" hidden></p></div><div class="modal-foot"><button type="button" class="btn" data-user-close>Cancel</button><button type="submit" class="btn btn-primary">Save user</button></div></form>
     </div>
@@ -810,16 +815,17 @@
       { id: 'CAM-DVO-003', name: 'Parking Area', branch: 'Davao Downtown', current: 'live', uptime: '99.7%', days: [...liveDays(12), 'degraded', ...liveDays(9)] },
       { id: 'CAM-DVO-011', name: 'Stock Room', branch: 'Davao Downtown', current: 'maintenance', uptime: '96.3%', days: [...liveDays(18), 'maintenance', 'maintenance', 'maintenance', 'maintenance'] }
     ];
-    const statusLabels = { live: 'Live', down: 'Down', degraded: 'Degraded', maintenance: 'Maint.', nodata: '—' };
+    cameraRows.forEach(camera => { while (camera.days.length < 25) camera.days.push('nodata'); });
+    const statusLabels = { live: 'Online', down: 'Offline', degraded: 'Degraded', maintenance: 'Maint.', nodata: '—' };
 
     function renderStatusMatrix() {
-      const dates = Array.from({ length: 22 }, (_, index) => index + 1);
-      document.getElementById('statusMatrixHead').innerHTML = `<tr><th class="camera-column" rowspan="2">Camera / branch</th><th class="month-heading" colspan="${dates.length}">October 2026</th><th class="uptime-column" rowspan="2">Uptime</th></tr><tr>${dates.map(day => `<th class="day-column ${day === 22 ? 'today' : ''}">${day}</th>`).join('')}</tr>`;
+      const dates = Array.from({ length: 25 }, (_, index) => index + 1);
+      document.getElementById('statusMatrixHead').innerHTML = `<tr><th class="camera-column" rowspan="2">Camera / branch</th><th class="month-heading" colspan="${dates.length}">October 2026</th><th class="uptime-column" rowspan="2">Uptime</th></tr><tr>${dates.map(day => `<th class="day-column ${day === 25 ? 'today' : ''}">${day}</th>`).join('')}</tr>`;
       document.getElementById('statusMatrixBody').innerHTML = cameraRows.map(camera => {
-        const cells = camera.days.map((state, index) => `<td class="matrix-cell ${state}" data-camera="${camera.id}" data-day="${index + 1}" data-state="${state}" title="${camera.id} · Oct ${index + 1}: ${statusLabels[state]}">${statusLabels[state]}</td>`).join('');
+        const cells = camera.days.map((state, index) => `<td class="matrix-cell ${state}" data-camera="${camera.id}" data-day="${index + 1}" data-state="${state}" title="${camera.id} · Oct ${index + 1}: ${statusLabels[state]}"><button type="button" class="camera-day-button" data-camera-day="${camera.id}" data-day="${index + 1}" aria-label="${camera.id}, October ${index + 1}: ${statusLabels[state]}. Edit daily record">${statusLabels[state]}<span class="day-indicators">${window.cameraDayIndicators ? window.cameraDayIndicators(camera.id, index + 1) : ''}</span></button></td>`).join('');
         return `<tr class="status-row" data-search="${camera.id.toLowerCase()} ${camera.name.toLowerCase()} ${camera.branch.toLowerCase()}" data-branch="${camera.branch}" data-status="${camera.current}"><td class="camera-column"><div class="matrix-camera"><div><strong>${camera.id} · ${camera.name}</strong><span>${camera.branch}</span></div><span class="status ${camera.current}">${statusLabels[camera.current]}</span></div></td>${cells}<td class="uptime-column">${camera.uptime}</td></tr>`;
       }).join('');
-      document.querySelectorAll('.matrix-cell').forEach(cell => cell.addEventListener('click', () => showToast(`${cell.dataset.camera} ·  ${cell.dataset.day} October: ${statusLabels[cell.dataset.state]}`)));
+      document.querySelectorAll('.matrix-cell').forEach(cell => cell.addEventListener('click', () => window.openCameraDay?.(cell.dataset.camera, Number(cell.dataset.day))));
       filterCameras();
     }
 
@@ -877,7 +883,7 @@
     const isRecorder = device => device && ['DVR', 'NVR'].includes(device.type);
     const isCamera = device => device && ['IP Camera', 'Analog Camera'].includes(device.type);
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-    const deviceDefaults = { environment: 'Production', location: '', brand: '', model: '', serial: '', ip: '', owner: 'CCTV Operations', channel: '', channels: '', storage: '', diskHealth: 'Unknown', installed: '', warranty: '', notes: '', logs: [] };
+    const deviceDefaults = { location: '', brand: '', model: '', serial: '', ip: '', owner: 'CCTV Operations', channel: '', channels: '', storage: '', diskHealth: 'Unknown', installed: '', warranty: '', notes: '', logs: [] };
     const sampleEquipment = [
       { id: 'RTR-MKT-01', name: 'Branch gateway', type: 'Router', branch: 'Makati Central', status: 'live', parent: '', ip: '192.168.10.1', location: 'Server rack', brand: 'Sample vendor', model: 'Business router' },
       { id: 'SW-MKT-01', name: 'Security PoE switch', type: 'PoE Switch', branch: 'Makati Central', status: 'live', parent: 'RTR-MKT-01', ip: '192.168.10.2', location: 'Server rack', model: '24-port PoE switch' },
@@ -910,7 +916,7 @@
     let deviceReturnFocus = null;
     const deviceModal = document.getElementById('deviceModal');
     const deviceForm = document.getElementById('deviceForm');
-    const deviceFieldIds = { id: 'deviceAssetId', name: 'deviceName', type: 'deviceType', branch: 'deviceBranch', environment: 'deviceEnvironment', location: 'deviceLocation', brand: 'deviceBrand', model: 'deviceModel', serial: 'deviceSerial', ip: 'deviceIp', status: 'deviceStatus', owner: 'deviceOwner', parent: 'deviceParent', channel: 'deviceChannel', channels: 'deviceChannels', storage: 'deviceStorage', diskHealth: 'deviceDiskHealth', installed: 'deviceInstalled', warranty: 'deviceWarranty', notes: 'deviceNotes' };
+    const deviceFieldIds = { id: 'deviceAssetId', name: 'deviceName', type: 'deviceType', branch: 'deviceBranch', location: 'deviceLocation', brand: 'deviceBrand', model: 'deviceModel', serial: 'deviceSerial', ip: 'deviceIp', status: 'deviceStatus', owner: 'deviceOwner', parent: 'deviceParent', channel: 'deviceChannel', channels: 'deviceChannels', storage: 'deviceStorage', diskHealth: 'deviceDiskHealth', installed: 'deviceInstalled', warranty: 'deviceWarranty', notes: 'deviceNotes' };
     ['deviceType', 'deviceTypeFilter'].forEach(id => document.getElementById(id).insertAdjacentHTML('beforeend', deviceTypes.map(type => `<option>${escapeHtml(type)}</option>`).join('')));
     ['deviceBranch', 'deviceBranchFilter'].forEach(id => document.getElementById(id).insertAdjacentHTML('beforeend', deviceBranches.map(branch => `<option>${escapeHtml(branch)}</option>`).join('')));
 
@@ -965,7 +971,7 @@
       if (!device) { panel.innerHTML = '<div class="detail-body"><h2 class="card-title">Device details</h2><p class="device-description">Select a device or change your filters.</p></div>'; return; }
       const children = devices.filter(item => item.parent === device.id);
       const cameraCount = children.filter(isCamera).length;
-      const fields = [['Asset ID', device.id], ['Type', device.type], ['Branch', device.branch], ['Environment', device.environment], ['Location', device.location], ['Responsible team', device.owner], ['Brand / model', [device.brand, device.model].filter(Boolean).join(' / ')], ['Serial number', device.serial], ['IPv4 address', device.ip], ['Installed', deviceDate(device.installed)], ['Warranty ends', deviceDate(device.warranty)]];
+      const fields = [['Asset ID', device.id], ['Type', device.type], ['Branch', device.branch], ['Location', device.location], ['Responsible team', device.owner], ['Brand / model', [device.brand, device.model].filter(Boolean).join(' / ')], ['Serial number', device.serial], ['IPv4 address', device.ip], ['Installed', deviceDate(device.installed)], ['Warranty ends', deviceDate(device.warranty)]];
       if (isRecorder(device)) fields.push(['Camera channels', `${cameraCount} assigned / ${device.channels} capacity`], ['Installed storage', `${device.storage || 0} TB`], ['Storage health', device.diskHealth]);
       if (isCamera(device)) fields.push(['Recorder channel', device.channel]);
       const logHtml = [...device.logs].reverse().map(log => `<div class="device-audit"><strong>${escapeHtml(log.action)} · ${escapeHtml(log.actor)}</strong><p>${log.before ? `${escapeHtml(deviceStates[log.before] || log.before)} → ` : ''}${escapeHtml(deviceStates[log.after] || log.after)}</p><p>${escapeHtml(log.reason)}</p><time>${escapeHtml(new Date(log.at).toLocaleString('en-GB', { timeZone: 'Asia/Singapore' }))} SGT</time></div>`).join('');
@@ -985,11 +991,10 @@
 
     function refreshDeviceConnections(preferredParent) {
       const branch = document.getElementById('deviceBranch').value;
-      const environment = document.getElementById('deviceEnvironment').value;
       const parent = document.getElementById('deviceParent');
       const selected = preferredParent === undefined ? parent.value : preferredParent;
       const excluded = connectedDescendants(editingDeviceId);
-      const options = devices.filter(device => device.id !== editingDeviceId && !excluded.has(device.id) && device.branch === branch && device.environment === environment);
+      const options = devices.filter(device => device.id !== editingDeviceId && !excluded.has(device.id) && device.branch === branch);
       parent.innerHTML = '<option value="">Standalone / not assigned</option>' + options.map(device => `<option value="${escapeHtml(device.id)}">${escapeHtml(device.id)} · ${escapeHtml(device.type)} · ${escapeHtml(device.name)}</option>`).join('');
       if (options.some(device => device.id === selected)) parent.value = selected;
       refreshDeviceTypeFields();
@@ -1019,6 +1024,7 @@
       document.getElementById('deviceAssetId').readOnly = Boolean(device);
       refreshDeviceConnections(values.parent);
       deviceModal.classList.add('open');
+      window.prepareDeviceSections?.(Boolean(device));
       document.getElementById(device ? 'deviceStatus' : 'deviceAssetId').focus();
     }
 
@@ -1034,12 +1040,12 @@
       if (!deviceModal.classList.contains('open')) return;
       if (event.key === 'Escape') { closeDeviceForm(); return; }
       if (event.key !== 'Tab') return;
-      const focusable = [...deviceModal.querySelectorAll('button, input, select, textarea')].filter(element => !element.disabled && !element.closest('[hidden]'));
+      const focusable = [...deviceModal.querySelectorAll('button, input, select, textarea, summary')].filter(element => !element.disabled && !element.closest('[hidden]') && (element.tagName === 'SUMMARY' || !element.closest('details:not([open])')));
       const first = focusable[0], last = focusable[focusable.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     });
-    ['deviceBranch', 'deviceEnvironment'].forEach(id => document.getElementById(id).addEventListener('change', () => refreshDeviceConnections()));
+    ['deviceBranch'].forEach(id => document.getElementById(id).addEventListener('change', () => refreshDeviceConnections()));
     document.getElementById('deviceType').addEventListener('change', refreshDeviceTypeFields);
     document.getElementById('deviceParent').addEventListener('change', refreshDeviceTypeFields);
 
@@ -1047,11 +1053,11 @@
       if (!next.id || !next.name || !next.reason) return 'Enter an asset ID, device name, and a reason for this action.';
       if (!oldDevice && devices.some(device => device.id.toLowerCase() === next.id.toLowerCase())) return 'This asset ID is already registered.';
       if (next.ip && (!/^\d{1,3}(\.\d{1,3}){3}$/.test(next.ip) || next.ip.split('.').some(part => Number(part) > 255))) return 'Enter a valid IPv4 address, for example 192.168.10.20.';
-      if (next.ip && devices.some(device => device.id !== next.id && device.branch === next.branch && device.environment === next.environment && device.ip === next.ip)) return 'This IP address is already assigned in this branch and environment.';
+      if (next.ip && devices.some(device => device.id !== next.id && device.branch === next.branch && device.ip === next.ip)) return 'This IP address is already assigned in this branch.';
       const children = devices.filter(device => device.parent === next.id);
-      if (children.some(device => device.branch !== next.branch || device.environment !== next.environment)) return 'Move the connected equipment to another device before changing this branch or environment.';
+      if (children.some(device => device.branch !== next.branch)) return 'Move the connected equipment to another device before changing this branch.';
       const parent = devices.find(device => device.id === next.parent);
-      if (next.parent && (!parent || parent.branch !== next.branch || parent.environment !== next.environment || parent.id === next.id || connectedDescendants(next.id).has(parent.id))) return 'Choose a connected device in the same branch and environment, without a circular connection.';
+      if (next.parent && (!parent || parent.branch !== next.branch || parent.id === next.id || connectedDescendants(next.id).has(parent.id))) return 'Choose a connected device in the same branch, without a circular connection.';
       if (isRecorder(next)) {
         if (!Number.isInteger(Number(next.channels)) || Number(next.channels) < 1) return 'Enter a recorder channel capacity of at least 1.';
         if (children.filter(isCamera).length > Number(next.channels) || children.some(device => isCamera(device) && Number(device.channel) > Number(next.channels))) return 'The capacity cannot be lower than the connected cameras or their assigned channels.';
@@ -1116,7 +1122,7 @@
       { id: 'IR-2026-1049', title: 'Recorder storage above threshold', branch: 'Makati Central', deviceId: 'NVR-MKT-02', priority: 'Medium', category: 'Storage issue', assignee: 'Security Vendor', status: 'on_hold', createdAt: '2026-10-21T10:40:00Z', dueAt: '2026-10-24T10:40:00Z', description: 'Storage utilization warning. Waiting for vendor assessment.' },
       { id: 'IR-2026-1046', title: 'Parking camera power restored', branch: 'Davao Downtown', deviceId: 'CAM-DVO-003', priority: 'Medium', category: 'Power issue', assignee: 'Branch Facilities', status: 'resolved', createdAt: '2026-10-21T01:00:00Z', dueAt: '2026-10-24T01:00:00Z', description: 'Intermittent power to the parking camera.', resolution: { cause: 'Power supply', work: 'Replaced the faulty power adapter and checked camera connectivity.', restoredAt: '2026-10-23T07:00:00Z', prevention: 'Inspect power adapters during monthly maintenance.', reference: 'WO-DEMO-1046', resolvedAt: '2026-10-23T07:15:00Z', by: 'Branch Facilities', confirmed: true } }
     ].map(incident => {
-      const report = { environment: 'Production', resolution: null, verification: null, ...incident };
+      const report = { resolution: null, verification: null, ...incident };
       if (!report.logs) report.logs = [{ at: report.createdAt, by: 'Demo setup', type: 'Incident created', notes: report.description, from: '', to: report.resolution ? 'open' : report.status }];
       if (report.resolution) report.logs.push({ at: report.resolution.resolvedAt, by: report.resolution.by, type: 'Resolved', notes: `${report.resolution.cause}: ${report.resolution.work}`, reference: report.resolution.reference, from: 'in_progress', to: 'resolved', resolution: { ...report.resolution } });
       return report;
@@ -1319,6 +1325,10 @@
       document.getElementById('incidentItems').innerHTML = visible.map(item => `<button class="incident-row ${item.id === selectedIncidentId ? 'active' : ''}" data-incident="${escapeHtml(item.id)}" aria-pressed="${item.id === selectedIncidentId}"><span class="severity ${item.priority === 'Critical' ? 'critical' : item.priority === 'Low' ? 'low' : ''}"></span><span class="incident-main"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.id)} · ${escapeHtml(item.branch)} · ${escapeHtml(item.deviceId)}</span></span><span class="incident-side"><span>${escapeHtml(item.priority)}${incidentOverdue(item) ? ' · SLA overdue' : ''}</span>${incidentBadge(item.status)}</span></button>`).join('') || '<div class="incident-empty">No incidents match these filters.</div>';
       renderIncidentDetail();
     }
+    function safeHttpUrl(value) {
+      if (!value) return '';
+      try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : ''; } catch { return ''; }
+    }
     function renderIncidentDetail() {
       const incident = incidents.find(item => item.id === selectedIncidentId);
       const panel = document.getElementById('incidentDetail');
@@ -1328,7 +1338,7 @@
       const resolutionProofs = incidentProofs(incident).filter(proof => (r?.proofIds || []).includes(proof.id) && isProofAttachment(proof));
       const resolutionHtml = r ? `<div class="resolution-card"><h3>${incident.status === 'closed' ? 'Verified resolution' : 'Resolution awaiting verification'}</h3><dl><dt>Root cause</dt><dd>${escapeHtml(r.cause)}</dd><dt>Work performed</dt><dd>${escapeHtml(r.work)}</dd><dt>Service restored</dt><dd>${escapeHtml(incidentTime(r.restoredAt))}</dd><dt>Resolved by</dt><dd>${escapeHtml(r.by)} · ${escapeHtml(incidentTime(r.resolvedAt))}</dd><dt>Preventive action</dt><dd>${escapeHtml(r.prevention || 'No follow-up recorded.')}</dd>${r.reference ? `<dt>Evidence / reference</dt><dd>${escapeHtml(r.reference)}</dd>` : ''}<dt>Resolution proof (${resolutionProofs.length})</dt><dd>${resolutionProofs.length ? `<div class="proof-grid">${proofCards(resolutionProofs)}</div>` : 'No proof attached.'}</dd>${v ? `<dt>Verified by</dt><dd>${escapeHtml(v.by)} · ${escapeHtml(incidentTime(v.at))}</dd><dt>Verification notes</dt><dd>${escapeHtml(v.notes)}</dd>` : ''}</dl></div>` : '';
       const history = [...incident.logs].reverse().map(log => `<div class="timeline-item"><strong>${escapeHtml(log.type)} · ${escapeHtml(log.by)}</strong><p>${escapeHtml(log.notes)}</p>${log.from !== log.to && log.to ? `<span class="log-change">${log.from ? `${escapeHtml(incidentStateLabels[log.from])} → ` : ''}${escapeHtml(incidentStateLabels[log.to])}</span>` : ''}${log.resolution ? `<p>Root cause: ${escapeHtml(log.resolution.cause)}\nRestored: ${escapeHtml(incidentTime(log.resolution.restoredAt))}${log.resolution.prevention ? `\nPrevention: ${escapeHtml(log.resolution.prevention)}` : ''}</p>` : ''}${log.reference ? `<p>Reference: ${escapeHtml(log.reference)}</p>` : ''}${log.attachments?.length ? `<div class="section-label">Proof attachments</div><div class="proof-grid">${proofCards(log.attachments)}</div>` : ''}<time>${escapeHtml(incidentTime(log.at))}</time></div>`).join('');
-      panel.innerHTML = `<div class="card-head"><div><h2 class="card-title">Incident detail</h2><p class="card-subtitle" id="incidentId">${escapeHtml(incident.id)}</p></div>${incidentBadge(incident.status)}</div><div class="detail-body"><div class="incident-heading"><h2 id="incidentTitle">${escapeHtml(incident.title)}</h2></div><p class="device-description">${escapeHtml(incident.branch)} · ${escapeHtml(incident.deviceId)} · ${escapeHtml(incident.category)}</p><div class="info-grid"><div><small>Assigned to</small><strong>${escapeHtml(incident.assignee)}</strong></div><div><small>Priority</small><strong>${escapeHtml(incident.priority)}</strong></div><div><small>Environment</small><strong>${escapeHtml(incident.environment)}</strong></div><div><small>Opened</small><strong>${escapeHtml(incidentTime(incident.createdAt))}</strong></div><div><small>Resolution target</small><strong>${escapeHtml(incidentTime(incident.dueAt))}</strong></div><div><small>SLA status</small><strong>${activeIncidentStates.includes(incident.status) ? (incidentOverdue(incident) ? 'Overdue' : 'Within target') : (Date.parse(r?.resolvedAt) > Date.parse(incident.dueAt) ? 'Resolved after target' : 'Resolved within target')}</strong></div></div><p class="device-description" style="white-space:pre-wrap">${escapeHtml(incident.description)}</p>${resolutionHtml}<div class="section-label">Actions</div><div class="detail-actions"><button class="btn" data-incident-action="action">Add action log</button>${activeIncidentStates.includes(incident.status) ? '<button class="btn btn-primary" data-incident-action="resolve">Resolve incident</button>' : `${incident.status === 'resolved' ? '<button class="btn btn-primary" data-incident-action="verify">Verify & close</button>' : ''}<button class="btn btn-danger" data-incident-action="reopen">Reopen incident</button>`}</div><div class="section-label">Action history (${incident.logs.length})</div><div class="timeline">${history}</div></div>`;
+      panel.innerHTML = `<div class="card-head"><div><h2 class="card-title">Incident detail</h2><p class="card-subtitle" id="incidentId">${escapeHtml(incident.id)}</p></div>${incidentBadge(incident.status)}</div><div class="detail-body"><div class="incident-heading"><h2 id="incidentTitle">${escapeHtml(incident.title)}</h2></div><p class="device-description">${escapeHtml(incident.branch)} · ${escapeHtml(incident.deviceId)} · ${escapeHtml(incident.category)}</p><div class="info-grid"><div><small>Assigned to</small><strong>${escapeHtml(incident.assignee)}</strong></div><div><small>Priority</small><strong>${escapeHtml(incident.priority)}</strong></div><div><small>Opened</small><strong>${escapeHtml(incidentTime(incident.createdAt))}</strong></div><div><small>Resolution target</small><strong>${escapeHtml(incidentTime(incident.dueAt))}</strong></div><div><small>SLA status</small><strong>${activeIncidentStates.includes(incident.status) ? (incidentOverdue(incident) ? 'Overdue' : 'Within target') : (Date.parse(r?.resolvedAt) > Date.parse(incident.dueAt) ? 'Resolved after target' : 'Resolved within target')}</strong></div></div><p class="device-description" style="white-space:pre-wrap">${escapeHtml(incident.description)}</p><div class="section-label">Signed incident report</div><form id="signedIncidentDocumentForm" class="field"><label for="signedIncidentDocumentUrl">Signed document URL</label><input id="signedIncidentDocumentUrl" type="url" maxlength="2000" value="${escapeHtml(incident.signedDocumentUrl || '')}" placeholder="https://.../signed-report.pdf"><button class="btn" style="margin-top:10px" type="submit">Save document link</button><p id="signedIncidentDocumentError" role="alert" hidden></p>${safeHttpUrl(incident.signedDocumentUrl) ? `<p><a href="${escapeHtml(safeHttpUrl(incident.signedDocumentUrl))}" target="_blank" rel="noopener noreferrer">Open signed incident report</a></p>` : '<p>No signed document linked.</p>'}</form>${resolutionHtml}<div class="section-label">Actions</div><div class="detail-actions"><button class="btn" data-incident-action="action">Add action log</button>${activeIncidentStates.includes(incident.status) ? '<button class="btn btn-primary" data-incident-action="resolve">Resolve incident</button>' : `${incident.status === 'resolved' ? '<button class="btn btn-primary" data-incident-action="verify">Verify & close</button>' : ''}<button class="btn btn-danger" data-incident-action="reopen">Reopen incident</button>`}</div><div class="section-label">Action history (${incident.logs.length})</div><div class="timeline">${history}</div></div>`;
     }
     document.getElementById('incidentItems').addEventListener('click', event => {
       const row = event.target.closest('[data-incident]');
@@ -1474,14 +1484,13 @@
 
     function refreshIncidentDeviceOptions() {
       const branch = document.getElementById('modalBranch').value;
-      const environment = document.getElementById('modalEnvironment').value;
       const field = document.getElementById('modalCamera');
       const selected = field.value;
-      const matching = devices.filter(device => device.branch === branch && device.environment === environment);
+      const matching = devices.filter(device => device.branch === branch);
       field.innerHTML = '<option value="">Select device</option>' + matching.map(device => `<option value="${escapeHtml(device.id)}">${escapeHtml(device.id)} · ${escapeHtml(device.name)}</option>`).join('');
       if (matching.some(device => device.id === selected)) field.value = selected;
     }
-    ['modalBranch', 'modalEnvironment'].forEach(id => document.getElementById(id).addEventListener('change', refreshIncidentDeviceOptions));
+    ['modalBranch'].forEach(id => document.getElementById(id).addEventListener('change', refreshIncidentDeviceOptions));
     const creationError = document.createElement('p');
     creationError.id = 'incidentCreateError';
     creationError.className = 'form-error';
@@ -1500,17 +1509,18 @@
       event.preventDefault();
       const title = document.getElementById('modalSummary').value.trim();
       const branch = document.getElementById('modalBranch').value;
-      const environment = document.getElementById('modalEnvironment').value;
       const deviceId = document.getElementById('modalCamera').value;
-      const device = devices.find(item => item.id === deviceId && item.branch === branch && item.environment === environment);
+      const device = devices.find(item => item.id === deviceId && item.branch === branch);
       const priority = document.getElementById('modalPriority').value;
       const assignee = document.getElementById('modalAssignee').value;
-      if (!title || !device || !Object.hasOwn(incidentPriorityOrder, priority) || !incidentTeams.includes(assignee)) { creationError.textContent = 'Enter a summary and select a device in this branch and environment, priority, and assigned team.'; creationError.hidden = false; return; }
+      if (!title || !device || !Object.hasOwn(incidentPriorityOrder, priority) || !incidentTeams.includes(assignee)) { creationError.textContent = 'Enter a summary and select a device in this branch, priority, and assigned team.'; creationError.hidden = false; return; }
+      const signedDocumentUrl = document.getElementById('modalSignedDocument').value.trim();
+      if (signedDocumentUrl && !safeHttpUrl(signedDocumentUrl)) { creationError.textContent = 'Enter an HTTP or HTTPS link for the signed document.'; creationError.hidden = false; return; }
       const at = new Date().toISOString();
       const year = new Date().toLocaleDateString('en-GB', { timeZone: 'Asia/Manila', year: 'numeric' });
       const sequence = Math.max(1000, ...incidents.map(item => Number(item.id.split('-').at(-1)) || 0)) + 1;
       const id = `IR-${year}-${sequence}`;
-      const incident = { id, title, branch, environment, deviceId, priority, category: document.getElementById('modalCategory').value, assignee, status: 'assigned', createdAt: at, dueAt: incidentDueAt(priority, at), description: document.getElementById('modalDetails').value.trim(), resolution: null, verification: null, logs: [{ at, by: incidentActor, type: 'Incident created', notes: `Assigned to ${assignee}.`, from: '', to: 'assigned' }] };
+      const incident = { id, title, branch, deviceId, priority, signedDocumentUrl, category: document.getElementById('modalCategory').value, assignee, status: 'assigned', createdAt: at, dueAt: incidentDueAt(priority, at), description: document.getElementById('modalDetails').value.trim(), resolution: null, verification: null, logs: [{ at, by: incidentActor, type: 'Incident created', notes: `Assigned to ${assignee}.`, from: '', to: 'assigned' }] };
       incidents.push(incident);
       const saved = persistIncidents();
       selectedIncidentId = id;
@@ -1527,9 +1537,8 @@
     // Local user directory and role configuration for this mockup.
     const currentDemoUserId = 'USR-0001';
     const userStorageKey = 'rosewatch-users-v1';
-    const userEnvironments = ['Production', 'Staging / Test'];
     const userRoles = {
-      admin: { label: 'Administrator', summary: 'Manage users and all operations across branches and environments.', permissions: ['view', 'status', 'devices', 'create', 'logs', 'resolve', 'verify', 'reports', 'users'] },
+      admin: { label: 'Administrator', summary: 'Manage users and all operations across branches.', permissions: ['view', 'status', 'devices', 'create', 'logs', 'resolve', 'verify', 'reports', 'users'] },
       supervisor: { label: 'Supervisor', summary: 'Oversee assigned operations, manage equipment, and verify incident resolutions.', permissions: ['view', 'status', 'devices', 'create', 'logs', 'resolve', 'verify', 'reports'] },
       operator: { label: 'Operator', summary: 'Record daily camera status, create incidents, and record actions for assigned branches.', permissions: ['view', 'status', 'create', 'logs', 'reports'] },
       technician: { label: 'Technician', summary: 'Investigate faults, record repair actions and proof, and resolve incidents in assigned branches.', permissions: ['view', 'create', 'logs', 'resolve'] },
@@ -1537,19 +1546,19 @@
     };
     const userPermissionLabels = { view: 'View camera status and device information', status: 'Mark daily camera status', devices: 'Add and edit equipment', create: 'Create incident reports', logs: 'Add incident action logs and proof', resolve: 'Resolve incidents with proof', verify: 'Verify resolutions and reopen incidents', reports: 'View reports', users: 'Manage users and access assignments' };
     const seedUsers = [
-      { id: 'USR-0001', name: 'Alex Mendoza', email: 'alex.mendoza@example.com', role: 'admin', team: 'Administration', status: 'active', branchScope: 'all', branches: [], environments: [...userEnvironments] },
-      { id: 'USR-0002', name: 'Maria Reyes', email: 'maria.reyes@example.com', role: 'supervisor', team: 'CCTV Operations', status: 'active', branchScope: 'all', branches: [], environments: ['Production'] },
-      { id: 'USR-0003', name: 'Ramon Santos', email: 'ramon.santos@example.com', role: 'technician', team: 'Network Support', status: 'active', branchScope: 'selected', branches: ['Makati Central', 'Quezon City'], environments: ['Production'] },
-      { id: 'USR-0004', name: 'Jessica Lim', email: 'jessica.lim@example.com', role: 'operator', team: 'CCTV Operations', status: 'active', branchScope: 'selected', branches: ['Makati Central'], environments: ['Production'] },
-      { id: 'USR-0005', name: 'Bea Garcia', email: 'bea.garcia@example.com', role: 'viewer', team: 'Branch Facilities', status: 'active', branchScope: 'selected', branches: ['Cebu IT Park'], environments: ['Production'] },
-      { id: 'USR-0006', name: 'Paolo Cruz', email: 'paolo.cruz@example.com', role: 'technician', team: 'Security Vendor', status: 'inactive', branchScope: 'selected', branches: ['Davao Downtown'], environments: ['Production'] }
+      { id: 'USR-0001', name: 'Alex Mendoza', email: 'alex.mendoza@example.com', role: 'admin', team: 'Administration', status: 'active', branchScope: 'all', branches: [] },
+      { id: 'USR-0002', name: 'Maria Reyes', email: 'maria.reyes@example.com', role: 'supervisor', team: 'CCTV Operations', status: 'active', branchScope: 'all', branches: [] },
+      { id: 'USR-0003', name: 'Ramon Santos', email: 'ramon.santos@example.com', role: 'technician', team: 'Network Support', status: 'active', branchScope: 'selected', branches: ['Makati Central', 'Quezon City'] },
+      { id: 'USR-0004', name: 'Jessica Lim', email: 'jessica.lim@example.com', role: 'operator', team: 'CCTV Operations', status: 'active', branchScope: 'selected', branches: ['Makati Central'] },
+      { id: 'USR-0005', name: 'Bea Garcia', email: 'bea.garcia@example.com', role: 'viewer', team: 'Branch Facilities', status: 'active', branchScope: 'selected', branches: ['Cebu IT Park'] },
+      { id: 'USR-0006', name: 'Paolo Cruz', email: 'paolo.cruz@example.com', role: 'technician', team: 'Security Vendor', status: 'inactive', branchScope: 'selected', branches: ['Davao Downtown'] }
     ].map(user => ({ ...user, createdAt: '2026-10-22T06:00:00Z', updatedAt: '2026-10-22T06:00:00Z', logs: [{ at: '2026-10-22T06:00:00Z', actor: 'Demo setup', action: 'User registered', reason: 'Sample user record for review.', changes: [] }] }));
     let users = seedUsers;
     try {
       const saved = localStorage.getItem(userStorageKey);
       if (saved) {
         const records = JSON.parse(saved);
-        const valid = Array.isArray(records) && records.every(user => user && typeof user.id === 'string' && /^USR-\d+$/.test(user.id) && typeof user.name === 'string' && typeof user.email === 'string' && Object.hasOwn(userRoles, user.role) && ['active', 'inactive'].includes(user.status) && ['all', 'selected'].includes(user.branchScope) && Array.isArray(user.branches) && user.branches.every(branch => deviceBranches.includes(branch)) && (user.branchScope === 'all' || user.branches.length) && Array.isArray(user.environments) && user.environments.length && user.environments.every(environment => userEnvironments.includes(environment)) && Array.isArray(user.logs) && user.logs.every(log => log && typeof log.reason === 'string' && Array.isArray(log.changes)));
+        const valid = Array.isArray(records) && records.every(user => user && typeof user.id === 'string' && /^USR-\d+$/.test(user.id) && typeof user.name === 'string' && typeof user.email === 'string' && Object.hasOwn(userRoles, user.role) && ['active', 'inactive'].includes(user.status) && ['all', 'selected'].includes(user.branchScope) && Array.isArray(user.branches) && user.branches.every(branch => deviceBranches.includes(branch)) && (user.branchScope === 'all' || user.branches.length) && Array.isArray(user.logs) && user.logs.every(log => log && typeof log.reason === 'string' && Array.isArray(log.changes)));
         const sessionUser = valid && records.find(user => user.id === currentDemoUserId);
         if (!valid || new Set(records.map(user => user.id)).size !== records.length || new Set(records.map(user => user.email.toLowerCase())).size !== records.length || !sessionUser || sessionUser.status !== 'active' || sessionUser.role !== 'admin') throw new Error('Invalid user directory');
         users = records;
@@ -1586,7 +1595,7 @@
       const visible = users.filter(user => [user.name, user.email, user.team].join(' ').toLowerCase().includes(term) && (role === 'all' || user.role === role) && (status === 'all' || user.status === status) && (branch === 'all' || user.branchScope === 'all' || user.branches.includes(branch)));
       if (!visible.some(user => user.id === selectedUserId)) selectedUserId = visible[0]?.id;
       document.getElementById('userResultCount').textContent = `${visible.length} of ${users.length} users · select a user to manage`;
-      document.getElementById('userTableBody').innerHTML = visible.map(user => `<tr class="${user.id === selectedUserId ? 'selected' : ''}"><td><div class="user-person"><div class="avatar">${escapeHtml(userInitials(user.name))}</div><div><button class="device-link" data-user-id="${escapeHtml(user.id)}"><strong>${escapeHtml(user.name)}${user.id === currentDemoUserId ? ' (you)' : ''}</strong></button><small>${escapeHtml(user.email)}</small></div></div></td><td><span class="role-tag">${userRoles[user.role].label}</span><small>${escapeHtml(user.team)}</small></td><td>${escapeHtml(userBranchText(user))}<small>${escapeHtml(user.environments.join(', '))}</small></td><td>${userStatusBadge(user)}</td></tr>`).join('') || '<tr><td colspan="4" class="matrix-empty">No users match these filters.</td></tr>';
+      document.getElementById('userTableBody').innerHTML = visible.map(user => `<tr class="${user.id === selectedUserId ? 'selected' : ''}"><td><div class="user-person"><div class="avatar">${escapeHtml(userInitials(user.name))}</div><div><button class="device-link" data-user-id="${escapeHtml(user.id)}"><strong>${escapeHtml(user.name)}${user.id === currentDemoUserId ? ' (you)' : ''}</strong></button><small>${escapeHtml(user.email)}</small></div></div></td><td><span class="role-tag">${userRoles[user.role].label}</span><small>${escapeHtml(user.team)}</small></td><td>${escapeHtml(userBranchText(user))}</td><td>${userStatusBadge(user)}</td></tr>`).join('') || '<tr><td colspan="4" class="matrix-empty">No users match these filters.</td></tr>';
       renderUserDetail();
     }
     function renderUserDetail() {
@@ -1594,7 +1603,7 @@
       const panel = document.getElementById('userDetail');
       if (!user) { panel.innerHTML = '<div class="detail-body"><h2 class="card-title">User profile</h2><p class="device-description">Select a user or change your filters.</p></div>'; return; }
       const history = [...user.logs].reverse().map(log => `<div class="device-audit"><strong>${escapeHtml(log.action)} · ${escapeHtml(log.actor)}</strong><p>${escapeHtml(log.reason)}</p>${log.changes.length ? `<ul class="user-log-changes">${log.changes.map(change => `<li>${escapeHtml(change.label)}: ${escapeHtml(change.before)} → ${escapeHtml(change.after)}</li>`).join('')}</ul>` : ''}<time>${escapeHtml(incidentTime(log.at))}</time></div>`).join('');
-      const fields = [['User ID', user.id], ['Email address', user.email], ['Role', userRoles[user.role].label], ['Team', user.team], ['Branch access', userBranchText(user)], ['Environments', user.environments.join(', ')], ['Created', incidentTime(user.createdAt)], ['Last updated', incidentTime(user.updatedAt)]];
+      const fields = [['User ID', user.id], ['Email address', user.email], ['Role', userRoles[user.role].label], ['Team', user.team], ['Branch access', userBranchText(user)], ['Created', incidentTime(user.createdAt)], ['Last updated', incidentTime(user.updatedAt)]];
       panel.innerHTML = `<div class="card-head"><div><h2 class="card-title">${escapeHtml(user.name)}</h2><p class="card-subtitle">${escapeHtml(user.id)}${user.id === currentDemoUserId ? ' · Current demo account' : ''}</p></div>${userStatusBadge(user)}</div><div class="detail-body"><div class="detail-actions"><button class="btn btn-primary" data-user-action="edit">Edit user</button><button class="btn ${user.status === 'active' ? 'btn-danger' : ''}" data-user-action="toggle"${user.id === currentDemoUserId ? ' disabled' : ''}>${user.status === 'active' ? 'Deactivate' : 'Activate'} user</button></div>${user.id === currentDemoUserId ? '<p class="device-description">The current demo account must remain an active administrator.</p>' : ''}<dl class="asset-fields">${fields.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl><div class="section-label">Assigned role permissions</div><p class="device-description">${escapeHtml(userRoles[user.role].summary)}</p>${userRoles[user.role].permissions.map(key => `<div class="user-permission">${userPermissionLabels[key]}</div>`).join('')}<div class="section-label">Account change history (${user.logs.length})</div>${history}</div>`;
     }
     ['userSearch', 'userRoleFilter', 'userStatusFilter', 'userBranchFilter'].forEach(id => document.getElementById(id).addEventListener('input', renderUsers));
@@ -1618,18 +1627,13 @@
       const selected = scope.value === 'selected';
       document.getElementById('userBranchGroup').hidden = !selected;
       deviceBranches.forEach((branch, index) => document.getElementById(`userBranchChoice-${index}`).disabled = !selected);
-      ['userEnvironmentProduction', 'userEnvironmentTest'].forEach(id => {
-        const checkbox = document.getElementById(id);
-        if (admin) checkbox.checked = true;
-        checkbox.disabled = admin;
-      });
     }
     function openUserForm(id, nextStatus) {
       const user = users.find(item => item.id === id);
       editingUserId = user?.id || null;
       userReturnFocus = document.activeElement;
       userForm.reset();
-      const values = user || { name: '', email: '', role: 'viewer', team: 'CCTV Operations', status: 'active', branchScope: 'selected', branches: [], environments: ['Production'] };
+      const values = user || { name: '', email: '', role: 'viewer', team: 'CCTV Operations', status: 'active', branchScope: 'selected', branches: [] };
       const ownAccount = editingUserId === currentDemoUserId;
       document.getElementById('userModalTitle').textContent = nextStatus ? `${nextStatus === 'active' ? 'Activate' : 'Deactivate'} user` : user ? 'Edit user' : 'Add user';
       document.getElementById('userFormError').hidden = true;
@@ -1643,8 +1647,6 @@
       document.getElementById('userScope').value = values.branchScope;
       document.getElementById('userChangeReason').value = '';
       deviceBranches.forEach((branch, index) => document.getElementById(`userBranchChoice-${index}`).checked = values.branches.includes(branch));
-      document.getElementById('userEnvironmentProduction').checked = values.environments.includes('Production');
-      document.getElementById('userEnvironmentTest').checked = values.environments.includes('Staging / Test');
       refreshUserAccessFields();
       userModal.classList.add('open');
       document.getElementById(nextStatus ? 'userChangeReason' : 'userName').focus();
@@ -1669,7 +1671,7 @@
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     });
     function userSnapshot(user) {
-      return { name: user.name, email: user.email, role: userRoles[user.role].label, team: user.team, status: user.status === 'active' ? 'Active' : 'Inactive', branchScope: user.branchScope === 'all' ? 'All branches' : 'Selected branches', branches: user.branchScope === 'all' ? 'All branches' : [...user.branches].sort().join(', '), environments: [...user.environments].sort().join(', ') };
+      return { name: user.name, email: user.email, role: userRoles[user.role].label, team: user.team, status: user.status === 'active' ? 'Active' : 'Inactive', branchScope: user.branchScope === 'all' ? 'All branches' : 'Selected branches', branches: user.branchScope === 'all' ? 'All branches' : [...user.branches].sort().join(', ') };
     }
     function saveUserRecord(id, fields) {
       const oldUser = id ? users.find(user => user.id === id) : null;
@@ -1683,18 +1685,16 @@
       const admin = fields.role === 'admin';
       const branchScope = admin ? 'all' : fields.branchScope;
       const branches = branchScope === 'all' ? [] : [...new Set(fields.branches || [])];
-      const environments = admin ? [...userEnvironments] : [...new Set(fields.environments || [])];
       if ((branchScope === 'selected' && !branches.length) || branches.some(branch => !deviceBranches.includes(branch))) return { error: 'Select at least one valid branch for this user.' };
-      if (!environments.length || environments.some(environment => !userEnvironments.includes(environment))) return { error: 'Select at least one valid environment.' };
       const activeAdmins = users.filter(user => user.role === 'admin' && user.status === 'active' && user.id !== id).length;
       if (!activeAdmins && !(admin && fields.status === 'active')) return { error: 'Keep at least one active administrator in the user directory.' };
       if (id === currentDemoUserId && (!admin || fields.status !== 'active')) return { error: 'The current demo account must remain an active administrator.' };
       const at = new Date().toISOString();
       const nextId = id || `USR-${String(Math.max(0, ...users.map(user => Number(user.id.slice(4)) || 0)) + 1).padStart(4, '0')}`;
-      const next = { id: nextId, name, email, role: fields.role, team: fields.team, status: fields.status, branchScope, branches, environments, createdAt: oldUser?.createdAt || at, updatedAt: at };
+      const next = { id: nextId, name, email, role: fields.role, team: fields.team, status: fields.status, branchScope, branches, createdAt: oldUser?.createdAt || at, updatedAt: at };
       const before = oldUser ? userSnapshot(oldUser) : {};
       const after = userSnapshot(next);
-      const labels = { name: 'Name', email: 'Email', role: 'Role', team: 'Team', status: 'Account status', branchScope: 'Branch access', branches: 'Assigned branches', environments: 'Environments' };
+      const labels = { name: 'Name', email: 'Email', role: 'Role', team: 'Team', status: 'Account status', branchScope: 'Branch access', branches: 'Assigned branches' };
       const changes = Object.keys(after).filter(key => before[key] !== after[key]).map(key => ({ label: labels[key], before: before[key] || 'Not set', after: after[key] }));
       const action = !oldUser ? 'User registered' : oldUser.status !== next.status ? (next.status === 'active' ? 'User activated' : 'User deactivated') : oldUser.role !== next.role ? 'Role changed' : 'User updated';
       next.logs = [...(oldUser?.logs || []), { at, actor: currentDemoActor(), action, reason, changes }];
@@ -1710,7 +1710,7 @@
     }
     userForm.addEventListener('submit', event => {
       event.preventDefault();
-      const result = saveUserRecord(editingUserId, { name: document.getElementById('userName').value, email: document.getElementById('userEmail').value, role: document.getElementById('userRole').value, team: document.getElementById('userTeam').value, status: document.getElementById('userStatus').value, branchScope: document.getElementById('userScope').value, branches: deviceBranches.filter((branch, index) => document.getElementById(`userBranchChoice-${index}`).checked), environments: userEnvironments.filter((environment, index) => document.getElementById(index === 0 ? 'userEnvironmentProduction' : 'userEnvironmentTest').checked), reason: document.getElementById('userChangeReason').value });
+      const result = saveUserRecord(editingUserId, { name: document.getElementById('userName').value, email: document.getElementById('userEmail').value, role: document.getElementById('userRole').value, team: document.getElementById('userTeam').value, status: document.getElementById('userStatus').value, branchScope: document.getElementById('userScope').value, branches: deviceBranches.filter((branch, index) => document.getElementById(`userBranchChoice-${index}`).checked), reason: document.getElementById('userChangeReason').value });
       if (result.error) { document.getElementById('userFormError').textContent = result.error; document.getElementById('userFormError').hidden = false; return; }
       selectedUserId = result.user.id;
       document.getElementById('userSearch').value = '';
@@ -1721,5 +1721,32 @@
     });
     renderUsers();
   </script>
+  <dialog id="cameraDayDialog" class="camera-day-dialog" aria-labelledby="cameraDayTitle">
+    <form id="cameraDayForm">
+      <div class="card-head"><div><h2 id="cameraDayTitle" class="card-title">Camera daily record</h2><p id="cameraDayContext" class="card-subtitle"></p></div><button type="button" class="close-btn" id="closeCameraDay" aria-label="Close daily record">&times;</button></div>
+      <div class="detail-body">
+        <p id="cameraDayError" role="alert" hidden></p>
+        <fieldset class="camera-actions"><legend>1. Select actions</legend><p>Choose one or more actions, then save them together.</p><div class="camera-action-choices">
+          <label><input type="checkbox" id="actionCameraStatus">Update status</label>
+          <label><input type="checkbox" id="actionCameraImages">Attach images</label>
+          <label><input type="checkbox" id="actionCameraTicket">Create ticket</label>
+        </div></fieldset>
+        <div id="cameraStatusSection" hidden><div class="section-label">Camera status</div><div class="field"><label for="cameraDayStatus">Mark camera status</label><select id="cameraDayStatus"><option value="">Select status</option><option value="live">Online</option><option value="down">Offline</option></select></div></div>
+        <div id="cameraImagesSection" hidden><div class="section-label">Screenshot evidence</div>
+        <p class="device-description">Capture multiple screenshots, paste images, or upload PNG, JPEG and WebP files. Up to 6 images, 8 MB per original image.</p>
+        <div class="detail-actions"><button type="button" class="btn" id="captureCameraScreenshot">Capture screenshot</button><button type="button" class="btn" id="uploadCameraImages">Upload images</button><input id="cameraScreenshotFile" type="file" multiple accept="image/png,image/jpeg,image/webp" hidden></div>
+        <div id="cameraScreenshotPreview" class="daily-image-grid"></div><p id="cameraImageProgress" role="status" aria-live="polite"></p></div>
+        <div id="cameraTicketSection" hidden><div class="section-label">Linked ticket</div><div id="cameraLinkedTicket"></div>
+        <div id="cameraTicketFields"><div class="field"><label for="cameraTicketTitle">Ticket title</label><input id="cameraTicketTitle" maxlength="160" placeholder="Describe the service request"><p id="cameraTicketIntegrationNote">Create a ticket in the external ticketing system using this camera record.</p></div></div></div>
+        <div id="cameraSharedNotes" hidden><div class="field" style="margin-top:16px"><label for="cameraDayNotes">Observation / notes</label><textarea id="cameraDayNotes" rows="3" maxlength="2000"></textarea></div></div>
+        <div id="cameraDayHistory" class="device-description"></div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn" id="cancelCameraDay">Cancel</button><button type="submit" class="btn btn-primary" id="saveCameraDay" disabled>Save selected actions</button></div>
+    </form>
+  </dialog>
+  <script src="assets/camera-workflow.js"></script>
+  <script src="assets/device-sections.js"></script>
+  <script src="assets/incident-document.js"></script>
+  <script src="assets/operations.js"></script>
 </body>
 </html>

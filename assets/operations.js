@@ -1,0 +1,105 @@
+﻿/* Guided browser-local operations mockup. No automatic camera polling or message delivery. */
+(() => {
+ const $ = id => document.getElementById(id), esc = escapeHtml;
+ const today = '2026-10-25';
+ let branch = 'all', checklistFilter = 'all', selection = new Set(), galleryCamera = 'all', galleryDate = '', reportDate = today, reportBranch = 'all';
+ let reminders = {};
+ try { reminders = JSON.parse(localStorage.getItem('rosewatch-followups-v1') || '{}'); } catch {}
+ const records = () => window.roseWatch.getDailyRecords();
+ const images = r => r?.screenshots || (r?.screenshot ? [r.screenshot] : []);
+ const recordFor = (c,date=today) => records()[`${c.id}:${date}`];
+ const dateLabel = value => new Date(`${value}T12:00:00+08:00`).toLocaleDateString('en-PH',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Manila'});
+ const checked = c => !!recordFor(c)?.history?.some(h => h.actions?.includes('status') || (!h.actions && ['live','down'].includes(h.state)));
+ const stateLabel = s => ({live:'Online',down:'Offline',degraded:'Degraded',maintenance:'Maintenance',nodata:'Not checked'})[s] || 'Unknown';
+ const badge = s => `<span class="status ${esc(s === 'nodata' ? 'unknown' : s)}">${stateLabel(s)}</span>`;
+ const options = (values, chosen, all) => `<option value="all">${all}</option>` + values.map(v=>`<option value="${esc(v)}"${v===chosen?' selected':''}>${esc(v)}</option>`).join('');
+ const head = (eyebrow,title,description) => `<div class="page-head"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1><p>${description}</p></div></div>`;
+ const demo = '<p class="ops-note">Interactive mockup · 25 October 2026 · sample inventory · changes stay in this browser</p>';
+ function metrics(items) { return `<div class="metrics">${items.map(([label,value])=>`<article class="metric-card"><div class="metric-label">${label}</div><div class="metric-value">${value}</div></article>`).join('')}</div>`; }
+ function checklist() {
+  const all = cameraRows.filter(c=>branch==='all'||c.branch===branch);
+  const done = all.filter(checked).length;
+  const visible = all.filter(c=>checklistFilter==='all'||(checklistFilter==='unchecked'?!checked(c):checklistFilter==='checked'?checked(c):c.current!=='live'));
+  const chosen = all.filter(c=>selection.has(c.id));
+  $('ops-checklist').innerHTML = head('Daily rounds','Today’s checklist',`${dateLabel(today)} · review the camera before recording its status.`)+demo+
+   `<div class="ops-guide"><strong>1. Review</strong><span>Open the camera’s daily record.</span><strong>2. Record</strong><span>Mark Online / Offline and add evidence.</span><strong>3. Follow up</strong><span>Review outages or create an external ticket.</span></div>`+
+   metrics([['Checked today',`${done} / ${all.length}`],['Still to check',all.length-done],['Currently offline',all.filter(c=>c.current==='down').length],['Need attention',all.filter(c=>c.current!=='live').length]])+
+   `<article class="card"><div class="toolbar"><label>Branch <select class="select" id="opsBranch">${options(deviceBranches,branch,'All branches')}</select></label><label>Show <select id="opsChecklistFilter" class="select">${[['all','All cameras'],['unchecked','Not checked today'],['checked','Checked today'],['attention','Needs attention']].map(([v,l])=>`<option value="${v}"${v===checklistFilter?' selected':''}>${l}</option>`).join('')}</select></label><button class="btn" id="opsSelectVisible">Select visible cameras</button></div><div class="ops-progress"><progress max="${all.length||1}" value="${done}"></progress><span>${done===all.length&&all.length?'Daily rounds complete':`${all.length-done} cameras still need a status observation`}</span></div><div class="ops-list">${visible.map(c=>`<div class="ops-camera"><input type="checkbox" data-ops-select="${c.id}" aria-label="Select ${c.id}"${selection.has(c.id)?' checked':''}><div><strong>${c.id} · ${esc(c.name)}</strong><small>${esc(c.branch)} · ${checked(c)?'Checked today':'Not checked today'}</small></div>${badge(c.current)}<button class="btn" data-ops-review="${c.id}" data-date="${today}">${checked(c)?'Review record':'Check camera'}</button></div>`).join('')||'<p class="matrix-empty">No cameras match this view.</p>'}</div></article>`+
+   `<div class="ops-bulk"><div><strong>Bulk status update · ${chosen.length} selected</strong><p>Use for a confirmed branch outage or restoration. This records an observation for every selected camera.</p></div><button class="btn btn-primary" id="opsBulkOpen"${chosen.length?'':' disabled'}>Update selected cameras</button></div>`;
+  $('opsBranch').onchange=e=>{branch=e.target.value;selection.clear();checklist();};
+  $('opsChecklistFilter').onchange=e=>{checklistFilter=e.target.value;checklist();};
+  $('opsSelectVisible').onclick=()=>{visible.forEach(c=>selection.add(c.id));checklist();};
+  $('opsBulkOpen').onclick=()=>openBulk(chosen);
+ }
+ const bulk = document.createElement('dialog'); bulk.className='camera-day-dialog';bulk.id='opsBulkDialog';bulk.setAttribute('aria-label','Bulk camera status update');document.body.append(bulk);
+ function openBulk(cameras) {
+  bulk.innerHTML=`<form id="opsBulkForm"><div class="card-head"><h2 class="card-title">Update ${cameras.length} cameras together</h2><button class="close-btn" type="button" data-ops-close>×</button></div><div class="detail-body"><p>${dateLabel(today)} · Review the selection before saving.</p><ul>${cameras.map(c=>`<li>${esc(c.id)} · ${esc(c.name)}</li>`).join('')}</ul><div class="field"><label for="opsBulkState">New status</label><select id="opsBulkState"><option value="down">Offline — confirmed outage</option><option value="live">Online — service restored</option></select></div><div class="field"><label for="opsBulkReason">Observation / reason *</label><textarea required maxlength="2000" id="opsBulkReason" placeholder="For example: branch power outage confirmed by store manager"></textarea></div><p role="alert" id="opsBulkError"></p></div><div class="modal-foot"><button class="btn" type="button" data-ops-close>Cancel</button><button class="btn btn-primary">Save ${cameras.length} observations</button></div></form>`;
+  bulk.querySelectorAll('[data-ops-close]').forEach(b=>b.onclick=()=>bulk.close());
+  $('opsBulkForm').onsubmit=e=>{e.preventDefault();try{window.roseWatch.saveDailyStatuses(cameras.map(c=>({cameraId:c.id,date:today,state:$('opsBulkState').value,notes:$('opsBulkReason').value})));selection.clear();bulk.close();render();showToast('Camera observations saved together.');}catch(error){$('opsBulkError').textContent=error.message;}};
+  bulk.showModal();
+ }
+ function episodes() {
+  const result=[];
+  for(const c of cameraRows){let start=null;
+   c.days.forEach((state,i)=>{
+    if(state==='down'&&start===null)start=i;
+    if(state==='live'&&start!==null){result.push({camera:c,start:start+1,end:i+1,active:false});start=null;}
+   });
+   if(start!==null)result.push({camera:c,start:start+1,end:null,active:true});
+  }
+  return result;
+ }
+ function outages() {
+  const list=episodes();
+  $('ops-outages').innerHTML=head('Availability','Outage tracking','See unresolved outages and restore service from the camera record.')+demo+`<p class="ops-note">Based on daily observations. Start and restoration dates are observed dates; durations are estimates, not measured video downtime. Unchecked days do not confirm restoration.</p>`+
+   metrics([['Open outages',list.filter(e=>e.active).length],['Restored outages',list.filter(e=>!e.active).length],['Affected branches',new Set(list.filter(e=>e.active).map(e=>e.camera.branch)).size],['Awaiting check',cameraRows.filter(c=>!checked(c)&&c.current==='down').length]])+
+   `<article class="card"><div class="ops-list">${list.map(e=>`<div class="ops-camera"><div><strong>${esc(e.camera.id)} · ${esc(e.camera.name)}</strong><small>${esc(e.camera.branch)} · first offline observation: ${e.start} October</small><small>${e.active?'Restoration not confirmed':`Online observation: ${e.end} October`} · approximately ${(e.end||25)-e.start} calendar days</small></div>${badge(e.active?'down':'live')}<button class="btn" data-ops-review="${e.camera.id}" data-date="${today}">${e.active?'Record restoration':'View daily record'}</button></div>`).join('')||'<p class="matrix-empty">No offline observations recorded.</p>'}</div></article>`;
+ }
+ function evidence() {
+  const all=Object.entries(records()).flatMap(([key,r])=>images(r).map((src,index)=>({key,src,index,camera:key.split(':')[0],date:key.split(':')[1]})));
+  const visible=all.filter(i=>(galleryCamera==='all'||i.camera===galleryCamera)&&(!galleryDate||i.date===galleryDate));
+  $('ops-evidence').innerHTML=head('Evidence library','Screenshot history','Browse saved images by camera and date, then open the original daily record.')+demo+`<article class="card"><div class="toolbar"><label>Camera <select class="select" id="opsEvidenceCamera">${options(cameraRows.map(c=>c.id),galleryCamera,'All cameras')}</select></label><label>Date <input class="select" id="opsEvidenceDate" type="date" value="${galleryDate}" min="2026-10-01" max="${today}"></label><button class="btn" id="opsEvidenceClear">Clear filters</button><span>${visible.length} images</span></div><div class="ops-gallery">${visible.map((i,index)=>`<article><button class="ops-evidence-thumb" data-ops-image="${index}" aria-label="Enlarge ${esc(i.camera)} image ${i.index+1}"><img src="${i.src}" alt="${esc(i.camera)} evidence ${i.index+1}"></button><strong>${esc(i.camera)}</strong><p>${esc(i.date)} · Image ${i.index+1}</p><button class="text-btn" data-ops-review="${i.camera}" data-date="${i.date}">Open daily record</button></article>`).join('')||`<div class="ops-empty"><strong>No screenshots in this view yet</strong><p>Open a camera’s daily record, select Attach images, then capture or upload evidence.</p><button class="btn" data-ops-go="checklist">Go to today’s checklist</button></div>`}</div></article>`;
+  if ($('opsSampleEvidence')) $('opsSampleEvidence').onclick=async()=>{
+    const canvas=document.createElement('canvas');canvas.width=960;canvas.height=540;const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#253c3a';ctx.fillRect(0,0,960,540);ctx.strokeStyle='#6a8580';for(let x=0;x<960;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,540);ctx.stroke();}
+    ctx.fillStyle='#fff';ctx.font='bold 32px Arial';ctx.fillText('SIMULATED CAMERA IMAGE',55,210);ctx.font='22px Arial';ctx.fillText('CAM-MKT-001 ? Main Entrance',55,260);ctx.fillText('25 October 2026 ? Sample evidence for mockup review',55,300);ctx.fillStyle='#ffcf65';ctx.fillText('DEMO ? not actual CCTV footage',55,355);
+    try{const blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',.8));await window.roseWatch.attachCameraScreenshot('CAM-MKT-001',today,blob);showToast('Sample image added. Open it to try the preview.');}catch(error){showToast(error.message);}
+  };
+  $('opsEvidenceCamera').onchange=e=>{galleryCamera=e.target.value;evidence();};$('opsEvidenceDate').onchange=e=>{galleryDate=e.target.value;evidence();};$('opsEvidenceClear').onclick=()=>{galleryCamera='all';galleryDate='';evidence();};
+  $('ops-evidence').querySelectorAll('[data-ops-image]').forEach(button=>button.onclick=()=>{const image=visible[Number(button.dataset.opsImage)];viewer.innerHTML=`<div class="card-head"><h2 class="card-title">${esc(image.camera)} · ${esc(image.date)}</h2><button class="close-btn" id="opsImageClose" aria-label="Close preview">×</button></div><img class="ops-full-image" src="${image.src}" alt="Camera evidence"><div class="modal-foot"><a class="btn" href="${image.src}" download="${esc(image.camera)}-${image.date}.jpg">Download image</a></div>`;viewer.showModal();$('opsImageClose').onclick=()=>viewer.close();});
+ }
+ const viewer=document.createElement('dialog');viewer.className='camera-day-dialog ops-image-viewer';viewer.setAttribute('aria-label','Screenshot preview');document.body.append(viewer);
+ function branches(){
+  $('ops-branches').innerHTML=head('Branch health','Branch dashboard','Compare latest known camera states and today’s checking progress.')+demo+`<div class="ops-branch-grid">${deviceBranches.map(b=>{const cameras=cameraRows.filter(c=>c.branch===b),done=cameras.filter(checked).length,open=incidents.filter(i=>i.branch===b&&!['resolved','closed'].includes(i.status)).length;return `<article class="card"><div class="card-head"><h2 class="card-title">${esc(b)}</h2>${badge(cameras.every(c=>c.current==='live')?'live':'degraded')}</div><div class="detail-body"><div class="ops-branch-stats"><span><strong>${cameras.filter(c=>c.current==='live').length}/${cameras.length}</strong> Online</span><span><strong>${cameras.filter(c=>c.current==='down').length}</strong> Offline</span><span><strong>${open}</strong> Active incidents</span></div><p>Checked today: ${done} of ${cameras.length}</p><progress max="${cameras.length||1}" value="${done}"></progress><div class="detail-actions"><button class="btn" data-ops-branch="${esc(b)}">Check this branch</button><button class="text-btn" data-ops-incidents="${esc(b)}">Review incidents</button></div></div></article>`;}).join('')}</div>`;
+ }
+ function followups(){
+  const items=[...cameraRows.filter(c=>c.current==='down').map(c=>({id:`camera-${c.id}`,title:`${c.id} remains offline`,detail:`${c.branch} · confirm service or update the daily record`,camera:c.id})),...incidents.filter(i=>!['closed','resolved'].includes(i.status)).map(i=>({id:`incident-${i.id}`,title:`${i.id} · ${i.title}`,detail:`${i.assignee} · ${new Date(i.dueAt).getTime()<Date.parse(today+'T23:59:59+08:00')?'Past target date':'Awaiting action'}`,incident:i.id}))];
+  const host=$('opsFollowups');
+  host.innerHTML=`<div class="card-head"><div><h2 class="card-title">Follow-up queue</h2><p>In-app reminders for offline cameras and active incidents. No messages are sent.</p></div></div><div class="ops-list">${items.map(i=>{const snoozed=reminders[i.id]>today;return `<div class="ops-camera"><div><strong>${esc(i.title)}</strong><small>${esc(i.detail)}</small>${snoozed?`<small>Remind on ${esc(reminders[i.id])}</small>`:''}</div><button class="btn" ${i.camera?`data-ops-review="${i.camera}" data-date="${today}"`:`data-ops-incident="${i.incident}"`}>Review</button><button class="text-btn" data-ops-snooze="${i.id}">${snoozed?'Undo snooze':'Remind tomorrow'}</button></div>`;}).join('')||'<p class="matrix-empty">No follow-ups needed.</p>'}</div>`;
+ }
+ const followupHost=document.createElement('article');followupHost.className='card';followupHost.id='opsFollowups';followupHost.style.marginBottom='20px';$('page-reminders').insertBefore(followupHost,$('page-reminders').children[1]||null);
+ function reportData(){return cameraRows.filter(c=>reportBranch==='all'||c.branch===reportBranch).map(c=>({camera:c,record:recordFor(c,reportDate),state:c.days[Number(reportDate.slice(8))-1]||'nodata'}));}
+ function reports(){const rows=reportData();
+  $('ops-reports').innerHTML=head('Daily handover','Daily report export','Choose a date and branch, preview the contents, then download the report.')+demo+`<article class="card"><div class="toolbar"><label>Report date <input class="select" type="date" id="opsReportDate" value="${reportDate}" min="2026-10-01" max="${today}"></label><label>Branch <select class="select" id="opsReportBranch">${options(deviceBranches,reportBranch,'All branches')}</select></label><button class="btn btn-primary" id="opsDownloadReport">Download full report</button><button class="btn" id="opsDownloadCsv">Download camera CSV</button></div><div class="detail-body"><h2 class="card-title">${esc(reportBranch==='all'?'All branches':reportBranch)} · ${dateLabel(reportDate)}</h2><p>Full report includes camera observations, embedded screenshots, relevant incident summaries and external ticket links. Opens as a standalone HTML file; use your browser’s Print to save a PDF.</p><p>CSV includes camera observations only. Daily observations may be missing for unchecked cameras.</p>${rows.map(r=>`<div class="ops-camera"><div><strong>${esc(r.camera.id)} · ${esc(r.camera.name)}</strong><small>${esc(r.camera.branch)} · ${images(r.record).length} images · ${r.record?.externalTicketUrl?'External ticket linked':'No ticket link'}</small></div>${badge(r.state)}</div>`).join('')}</div></article>`;
+  $('opsReportDate').onchange=e=>{if(e.target.value){reportDate=e.target.value;reports();}};$('opsReportBranch').onchange=e=>{reportBranch=e.target.value;reports();};$('opsDownloadReport').onclick=downloadReport;$('opsDownloadCsv').onclick=downloadCsv;
+ }
+ function download(content,type,name){const url=URL.createObjectURL(new Blob([content],{type}));const link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast('Report downloaded.');}
+ function reportHtml(){const rows=reportData(), relevant=incidents.filter(i=>(reportBranch==='all'||i.branch===reportBranch)&&i.createdAt.slice(0,10)<=reportDate);return `<!doctype html><html><head><meta charset="utf-8"><title>RoseWatch daily report</title><style>body{font:14px Arial;color:#452626;margin:32px}h1,h2{color:#5d1616}article{border:1px solid #ecdcd0;padding:16px;margin:16px 0;break-inside:avoid}img{max-width:300px;max-height:220px;margin:8px}p{white-space:pre-wrap}a{overflow-wrap:anywhere}@media print{button{display:none}}</style></head><body><h1>RoseWatch daily report</h1><p>${esc(reportDate)} · ${esc(reportBranch)} · Interactive mockup / browser-local data</p><h2>Camera observations</h2>${rows.map(r=>`<article><h3>${esc(r.camera.id)} · ${esc(r.camera.name)}</h3><p>${esc(r.camera.branch)} · ${stateLabel(r.state)}</p><p>${esc(r.record?.notes||'No saved observation for this date.')}</p>${safeHttpUrl(r.record?.externalTicketUrl)?`<a href="${esc(safeHttpUrl(r.record.externalTicketUrl))}">External ticket</a>`:''}<div>${images(r.record).map(src=>`<img src="${src}" alt="Camera evidence">`).join('')}</div></article>`).join('')}<h2>Incident summaries (current status)</h2><p>Includes incidents opened by the report date; status reflects current saved records, not a historical snapshot.</p>${relevant.map(i=>`<article><h3>${esc(i.id)} · ${esc(i.title)}</h3><p>${esc(i.branch)} · ${esc(i.status)} · ${esc(i.assignee)}</p>${safeHttpUrl(i.signedDocumentUrl)?`<a href="${esc(safeHttpUrl(i.signedDocumentUrl))}">Signed report document</a>`:''}</article>`).join('')||'<p>No matching incidents.</p>'}</body></html>`;}
+ function downloadReport(){download(reportHtml(),'text/html',`RoseWatch-${reportDate}.html`);}
+ function downloadCsv(){const cell=value=>'"'+String(value??'').replace(/^(\s*)([=+@-])/,"'$&").replaceAll('"','""')+'"';const rows=[['Date','Camera','Branch','Status','Notes','Images','Ticket URL'],...reportData().map(r=>[reportDate,r.camera.id,r.camera.branch,stateLabel(r.state),r.record?.notes,images(r.record).length,safeHttpUrl(r.record?.externalTicketUrl)])];download('\ufeff'+rows.map(r=>r.map(cell).join(',')).join('\r\n'),'text/csv',`RoseWatch-${reportDate}.csv`);}
+ document.addEventListener('change',event=>{const id=event.target.dataset.opsSelect;if(id){event.target.checked?selection.add(id):selection.delete(id);checklist();}});
+ document.addEventListener('click',event=>{
+  const b=event.target.closest('button');if(!b)return;
+  if(b.dataset.opsReview){window.openCameraDay(b.dataset.opsReview,Number(b.dataset.date.slice(8)));}
+  if(b.dataset.opsGo)showPage(b.dataset.opsGo);
+  if(b.dataset.opsBranch){branch=b.dataset.opsBranch;selection.clear();checklist();showPage('checklist');}
+  if(b.dataset.opsIncidents){$('incidentSearch').value=b.dataset.opsIncidents;$('incidentStatusFilter').value='active';renderIncidents();showPage('incidents');}
+  if(b.dataset.opsIncident){selectedIncidentId=b.dataset.opsIncident;$('incidentSearch').value=b.dataset.opsIncident;$('incidentStatusFilter').value='all';renderIncidents();showPage('incidents');}
+  if(b.dataset.opsSnooze){const next={...reminders};if(next[b.dataset.opsSnooze]>today)delete next[b.dataset.opsSnooze];else next[b.dataset.opsSnooze]='2026-10-26';try{localStorage.setItem('rosewatch-followups-v1',JSON.stringify(next));reminders=next;followups();}catch{showToast('Reminder could not be saved.');}}
+  if(b.matches('[data-page=branches],[data-page=reports],[data-page=reminders],[data-page=checklist],[data-page=outages],[data-page=evidence]'))render();
+ });
+ function render(){checklist();outages();evidence();branches();followups();reports();}
+ const quick=document.createElement('div');quick.className='ops-bulk';quick.innerHTML='<div><strong>Start your daily rounds</strong><p>Check cameras, follow up outages, and prepare the daily handover.</p></div><button class="btn btn-primary" data-ops-go="checklist">Open today’s checklist</button>';$('page-overview').insertBefore(quick,$('page-overview').children[1]);
+ const cameraExport=$('page-cameras').querySelector('.page-head .btn');cameraExport.onclick=()=>{showPage('reports');reports();};cameraExport.textContent='Export daily report';
+ window.roseWatchOperations={reportHtml,episodes};window.addEventListener('rosewatch:records-changed',render);render();
+})();

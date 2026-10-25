@@ -1,0 +1,13 @@
+<script setup lang="ts">
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { defineStore } from 'pinia';
+const useNavigation=defineStore('navigation',{state:()=>({open:false})});
+const navigation=useNavigation();
+const props=defineProps<{section:string;title:string}>();
+const page=usePage();
+const user=computed(()=>page.props.auth as {user:{name:string;role:string}});
+const flash=computed(()=>page.props.flash as {success?:string;error?:string});
+const links=[['overview','Overview','dashboard','▦'],['cameras','Cameras','cameras','▣'],['checklist','Today’s checklist','checklist','☑'],['evidence','Screenshot history','evidence','▧'],['outages','Outage tracking','outages','◷'],['branches','Branch dashboard','branches','⌂'],['process','Process flow','process','⇢'],['incidents','Incidents','incidents','△'],['tickets','Tickets','tickets','▤'],['reminders','Reminders','reminders','♧'],['devices','Device management','devices','▥'],['reports','Reports','reports','↗']];
+</script>
+<template><div class="rw-shell"><button v-if="navigation.open" class="rw-nav-scrim" aria-label="Close menu" @click="navigation.open=false"></button><aside class="rw-sidebar" :class="{open:navigation.open}"><div class="rw-brand"><img src="/brand/rose-bakeshop-logo.png" alt="Rose Bakeshop"><strong>RoseWatch</strong><small>CCTV OPERATIONS</small></div><span class="rw-nav-label">Workspace</span><nav aria-label="Main navigation"><Link v-for="[id,label,path,icon] in links" :key="id" :href="'/'+path" class="rw-nav-link" :class="{active:section===id}" @click="navigation.open=false"><span aria-hidden="true">{{icon}}</span>{{label}}</Link><Link v-if="user.user.role==='admin'" href="/users" class="rw-nav-link" :class="{active:section==='users'}" @click="navigation.open=false"><span aria-hidden="true">♙</span>User management</Link></nav><div class="rw-sidebar-foot"><small>Rose Bakeshop operations</small><img src="/brand/rose-waves.svg" alt=""></div></aside><main class="rw-main"><header class="rw-topbar"><div><button class="rw-mobile-toggle rw-icon-button" aria-label="Open menu" @click="navigation.open=true">☰</button><span class="rw-workspace-label">Philippines Operations</span></div><div class="rw-session"><div><strong>{{user.user.name}}</strong><small>{{user.user.role}}</small></div><button class="rw-btn" @click="router.post('/logout')">Sign out</button></div></header><div class="rw-content"><div v-if="flash?.success" class="rw-flash" role="status">{{flash.success}}</div><div v-if="flash?.error" class="rw-errors" role="alert">{{flash.error}}</div><slot/></div></main></div></template>

@@ -77,10 +77,6 @@ page.element('userChangeReason').value = 'Change email';
 submit();
 assert.match(page.element('userFormError').textContent, /already assigned/);
 page.element('userEmail').value = 'new.operator@example.com';
-page.element('userEnvironmentProduction').checked = false;
-submit();
-assert.match(page.element('userFormError').textContent, /valid environment/);
-page.element('userEnvironmentProduction').checked = true;
 page.element('userRole').value = 'technician';
 page.element('userChangeReason').value = 'Transferred to technical support';
 submit();
@@ -124,16 +120,12 @@ page.element('userName').value = 'Second Administrator';
 page.element('userEmail').value = 'second.admin@example.com';
 page.element('userRole').value = 'admin';
 page.element('userScope').value = 'selected';
-page.element('userEnvironmentProduction').checked = false;
-page.element('userEnvironmentTest').checked = false;
 page.element('userChangeReason').value = 'Backup administrator';
 page.run('refreshUserAccessFields()');
 assert.equal(page.element('userScope').value, 'all');
 assert.equal(page.element('userScope').disabled, true);
-assert.equal(page.element('userEnvironmentTest').checked, true);
 submit();
 assert.equal(page.run('users.at(-1).branchScope'), 'all');
-assert.equal(page.run('users.at(-1).environments.length'), 2);
 assert.match(page.run("saveUserRecord('USR-0001', {...users[0], role:'viewer', reason:'Test'}).error"), /current demo account/);
 
 // Renaming the demo administrator updates new device/incident audit attribution.
@@ -160,4 +152,4 @@ assert.equal(noStorage.run('users[2].logs.length'), oldLogs);
 assert.equal(noStorage.element('userModal').classList.contains('open'), true);
 assert.match(noStorage.element('userFormError').textContent, /was not changed/);
 
-console.log('PASS: user creation/editing, duplicate-email validation, roles, branch/environment assignments, activation/deactivation, account history, persistence, filters, safe rendering, administrator protection, audit attribution, and storage failure rollback.');
+console.log('PASS: user creation/editing, duplicate-email validation, roles, branch assignments, activation/deactivation, account history, persistence, filters, safe rendering, administrator protection, audit attribution, and storage failure rollback.');
