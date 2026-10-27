@@ -19,6 +19,12 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing" force="true"/>
+        <env name="TICKET_ENDPOINT" value="" force="true"/>
+        <env name="TICKET_TOKEN" value="" force="true"/>
+        <env name="TICKET_DEPARTMENT_ID" value="" force="true"/>
+        <env name="TICKET_CATEGORY_ID" value="" force="true"/>
+        <env name="TICKET_ASSIGNEE_ID" value="" force="true"/>
+        <env name="TICKET_BOARD_ID" value="" force="true"/>
         <env name="APP_CONFIG_CACHE" value="storage/framework/cache/testing-config.php" force="true"/>
         <env name="APP_ROUTES_CACHE" value="storage/framework/cache/testing-routes.php" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>

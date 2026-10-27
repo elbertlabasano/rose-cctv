@@ -13,8 +13,55 @@ import IncidentAction from '../components/IncidentAction.vue';
 import IncidentHistory from '../components/IncidentHistory.vue';
 import AccountEditor from '../components/AccountEditor.vue';
 import WorkspaceFilters from '../components/WorkspaceFilters.vue';
+import RegisterSummaryRows from '../components/RegisterSummaryRows.vue';
+import ClusterFilter from '../components/ClusterFilter.vue';
+import LiveTicketList from '../components/LiveTicketList.vue';
+import QuickCameraStatus from '../components/QuickCameraStatus.vue';
+import type { QuickStatusResult } from '../types';
+import { branchMatchesCluster } from '../workspace-scope';
+import { hasStatusCheck, observationStatus, observationLabel } from '../observation-status';
 
 const props = defineProps<{ section: string; workspace: Workspace }>();
+const registerScroll = ref<HTMLElement | null>(null);
+
+function jumpToToday() {
+    const scroll = registerScroll.value;
+    const day = scroll?.querySelector<HTMLElement>('th.rw-register-day.today');
+    const camera = scroll?.querySelector<HTMLElement>('th.sticky-camera');
+    if (!scroll || !day || !camera) return;
+    const cameraWidth = camera.getBoundingClientRect().width;
+    const offset = day.getBoundingClientRect().left - scroll.getBoundingClientRect().left;
+    scroll.scrollTo({
+        left:
+            scroll.scrollLeft +
+            offset -
+            cameraWidth -
+            (scroll.clientWidth - cameraWidth - day.clientWidth) / 2,
+        behavior: 'smooth',
+    });
+}
+
+function quickStatusSaved(result: QuickStatusResult) {
+    router.replaceProp('workspace', (value: unknown) => {
+        const current = value as Workspace;
+        const observations = current.observations.filter(
+            (record) =>
+                record.device_id !== result.observation.device_id ||
+                record.date !== result.observation.date,
+        );
+        return {
+            ...current,
+            devices: current.devices.map((device) =>
+                device.id === result.device.id ? { ...device, ...result.device } : device,
+            ),
+            observations: [...observations, result.observation],
+            outages: [
+                ...current.outages.filter((outage) => outage.device_id !== result.device.id),
+                ...result.outages,
+            ],
+        };
+    });
+}
 
 const titles: Record<string, string> = {
     overview: 'Operations overview',
@@ -80,7 +127,45 @@ const deviceOpen = ref(false),
     branchOpen = ref(false),
     editingBranch = ref<Branch | null>(null);
 
-const branchForm = useForm({ name: '', code: '', address: '', active: true });
+const branchForm = useForm({
+    name: '',
+    code: '',
+    address: '',
+    active: true,
+    cluster_id: '' as number | '',
+});
+
+const requestedCluster = new URLSearchParams(window.location.search).get('cluster_id');
+const clusterFilter = ref(
+    requestedCluster ||
+        (props.section === 'cameras' && branch.value === 'all' && props.workspace.clusters?.length
+            ? 'clustered'
+            : 'all'),
+);
+const clusterBranches = computed(() =>
+    props.workspace.branches.filter((item) => branchMatchesCluster(item, clusterFilter.value)),
+);
+const scopeBranchIds = computed(
+    () =>
+        new Set(
+            clusterBranches.value
+                .filter((item) => branch.value === 'all' || item.id === Number(branch.value))
+                .map((item) => item.id),
+        ),
+);
+watch(clusterFilter, () => {
+    if (
+        branch.value !== 'all' &&
+        !clusterBranches.value.some((item) => item.id === Number(branch.value))
+    )
+        branch.value = 'all';
+    selectedIds.value = [];
+    selectedIncidentId.value = null;
+});
+
+function matchesCluster(device: Device) {
+    return branchMatchesCluster(device.branch, clusterFilter.value);
+}
 
 const canActOnSelectedDate = computed(
     () => props.workspace.permissions.write && props.workspace.date === props.workspace.today,
@@ -91,6 +176,7 @@ const cameras = computed(() =>
 );
 
 const matching = (d: Device) =>
+    matchesCluster(d) &&
     (branch.value === 'all' || d.branch_id === Number(branch.value)) &&
     [d.asset_id, d.name, d.branch.name, d.location]
         .join(' ')
@@ -104,9 +190,9 @@ const visibleCameras = computed(() =>
             (d) =>
                 statusFilter.value === 'all' ||
                 (statusFilter.value === 'unchecked'
-                    ? !observation(d.id, props.workspace.date)?.checked_at
+                    ? !hasStatusCheck(observation(d.id, props.workspace.date))
                     : statusFilter.value === 'checked'
-                      ? !!observation(d.id, props.workspace.date)?.checked_at
+                      ? hasStatusCheck(observation(d.id, props.workspace.date))
                       : d.status === statusFilter.value),
         ),
 );
@@ -114,8 +200,9 @@ const visibleCameras = computed(() =>
 const visibleBranches = computed(() =>
     props.workspace.branches.filter(
         (item) =>
+            branchMatchesCluster(item, clusterFilter.value) &&
             (branch.value === 'all' || item.id === Number(branch.value)) &&
-            [item.name, item.code, item.address]
+            [item.name, item.code, item.address, item.cluster?.name]
                 .join(' ')
                 .toLowerCase()
                 .includes(search.value.toLowerCase()),
@@ -142,15 +229,12 @@ const checkedCount = computed(
     () =>
         cameras.value
             .filter(matching)
-            .filter((d) => observation(d.id, props.workspace.date)?.checked_at).length,
+            .filter((d) => hasStatusCheck(observation(d.id, props.workspace.date))).length,
 );
 
 const dates = computed(() => {
     const [year, month] = props.workspace.date.split('-').map(Number);
-    const count =
-        props.workspace.date.slice(0, 7) === props.workspace.today.slice(0, 7)
-            ? Number(props.workspace.today.slice(8))
-            : new Date(year, month, 0).getDate();
+    const count = new Date(year, month, 0).getDate();
     return Array.from(
         { length: count },
         (_, i) => `${props.workspace.date.slice(0, 8)}${String(i + 1).padStart(2, '0')}`,
@@ -189,11 +273,7 @@ function changeRegisterMonth(event: Event) {
     const month = (event.target as HTMLSelectElement).value;
     const date =
         month === props.workspace.today.slice(0, 7) ? props.workspace.today : `${month}-01`;
-    router.get(
-        '/cameras',
-        { date, ...(branch.value === 'all' ? {} : { branch_id: branch.value }) },
-        { preserveScroll: true },
-    );
+    router.get('/cameras', { date, ...scopeParameters() }, { preserveScroll: true });
 }
 
 const activeIncidents = computed(() =>
@@ -203,7 +283,7 @@ const activeIncidents = computed(() =>
 const filteredIncidents = computed(() =>
     props.workspace.incidents.filter(
         (i) =>
-            (branch.value === 'all' || i.branch_id === Number(branch.value)) &&
+            scopeBranchIds.value.has(i.branch_id) &&
             [i.reference, i.title, i.device.asset_id, i.branch.name]
                 .join(' ')
                 .toLowerCase()
@@ -288,23 +368,63 @@ const reminderItems = computed(() =>
         }))
         .filter(
             (i) =>
-                (branch.value === 'all' || i.branch === Number(branch.value)) &&
+                scopeBranchIds.value.has(i.branch) &&
                 i.title.toLowerCase().includes(search.value.toLowerCase()) &&
                 (showSnoozed.value || !i.snoozed || i.snoozed <= props.workspace.today),
         ),
 );
 
 const accounts = computed(() =>
-    props.workspace.accounts.filter((u) =>
-        [u.name, u.email, u.idcode, u.team, u.role]
-            .join(' ')
-            .toLowerCase()
-            .includes(search.value.toLowerCase()),
+    props.workspace.accounts.filter(
+        (u) =>
+            accountMatchesScope(u) &&
+            [u.name, u.email, u.idcode, u.team, u.role]
+                .join(' ')
+                .toLowerCase()
+                .includes(search.value.toLowerCase()),
     ),
 );
 
+function accountMatchesScope(account: Account) {
+    if (clusterFilter.value === 'all' && branch.value === 'all') return true;
+    return (
+        scopeBranchIds.value.size > 0 &&
+        (account.role === 'admin' ||
+            account.all_branches ||
+            account.branches.some((item) => scopeBranchIds.value.has(item.id)))
+    );
+}
+
+const visibleAudits = computed(() =>
+    props.workspace.audits.filter((audit) => {
+        if (clusterFilter.value === 'all' && branch.value === 'all') return true;
+        if (audit.branch_id != null) return scopeBranchIds.value.has(audit.branch_id);
+        const account =
+            audit.subject_type === 'User'
+                ? props.workspace.accounts.find((item) => item.id === audit.subject_id)
+                : null;
+        return account ? accountMatchesScope(account) : false;
+    }),
+);
+
+function scopeParameters() {
+    return {
+        ...(clusterFilter.value === 'all' ? {} : { cluster_id: clusterFilter.value }),
+        ...(branch.value === 'all' ? {} : { branch_id: branch.value }),
+    };
+}
+
+const selectedClusterLabel = computed(() => {
+    if (clusterFilter.value === 'clustered') return 'Assigned clusters';
+    if (clusterFilter.value === 'unassigned') return 'Unassigned branches';
+    return (
+        props.workspace.clusters?.find((item) => item.id === Number(clusterFilter.value))?.name ||
+        'All clusters'
+    );
+});
+
 const reportUrl = (format: string) =>
-    `/reports/export?date=${props.workspace.date}&format=${format}${branch.value === 'all' ? '' : `&branch_id=${branch.value}`}`;
+    `/reports/export?${new URLSearchParams({ date: props.workspace.date, format, ...scopeParameters() })}`;
 
 const metricItems = computed(() =>
     props.section === 'checklist'
@@ -318,7 +438,13 @@ const metricItems = computed(() =>
               [
                   'Evidence images',
                   props.workspace.observations
-                      .filter((o) => o.date === props.workspace.date)
+                      .filter(
+                          (o) =>
+                              o.date === props.workspace.date &&
+                              props.workspace.devices.some(
+                                  (d) => d.id === o.device_id && matching(d),
+                              ),
+                      )
                       .reduce((n, o) => n + o.attachments.length, 0),
               ],
           ]
@@ -334,9 +460,7 @@ const metricItems = computed(() =>
               ],
               [
                   'Active incidents',
-                  activeIncidents.value.filter(
-                      (i) => branch.value === 'all' || i.branch_id === Number(branch.value),
-                  ).length,
+                  activeIncidents.value.filter((i) => scopeBranchIds.value.has(i.branch_id)).length,
               ],
           ],
 );
@@ -379,7 +503,7 @@ onUnmounted(() => {
 function dateChange(e: Event) {
     router.get(
         location.pathname,
-        { date: (e.target as HTMLInputElement).value },
+        { date: (e.target as HTMLInputElement).value, ...scopeParameters() },
         { preserveScroll: true },
     );
 }
@@ -459,6 +583,7 @@ function editBranch(b: Branch | null) {
         branchForm.code = b.code;
         branchForm.address = b.address || '';
         branchForm.active = b.active;
+        branchForm.cluster_id = b.cluster_id || '';
     }
     branchOpen.value = true;
 }
@@ -579,10 +704,12 @@ function saveBranch() {
             <article class="rw-card rw-overview-workspace">
                 <WorkspaceFilters
                     v-model:branch="branch"
+                    v-model:cluster="clusterFilter"
                     v-model:search="search"
                     v-model:status="statusFilter"
                     :section="section"
                     :branches="workspace.branches"
+                    :clusters="workspace.clusters || []"
                     :date="workspace.date"
                     :today="workspace.today"
                     @date-change="dateChange"
@@ -683,12 +810,17 @@ function saveBranch() {
                             type="search"
                             placeholder="Search camera, branch or location"
                     /></label>
+                    <ClusterFilter
+                        v-model="clusterFilter"
+                        :clusters="workspace.clusters || []"
+                        compact
+                    />
                     <label
                         ><span class="rw-sr-only">Filter by branch</span
                         ><select v-model="branch">
                             <option value="all">All branches</option>
                             <option
-                                v-for="b in workspace.branches"
+                                v-for="b in clusterBranches"
                                 :key="b.id"
                                 :value="String(b.id)"
                             >
@@ -727,10 +859,25 @@ function saveBranch() {
                     <div>
                         <h2>{{ registerMonthLabel }} status sheet</h2>
                         <p>
-                            One daily result per camera &#183; through
-                            {{ Number(dates[dates.length - 1]?.slice(8)) }}
-                            {{ registerMonthLabel.split(' ')[0] }}
+                            {{ visibleCameras.length }} cameras shown. Daily totals reflect the
+                            cameras shown below. Total recorded includes day-off and holiday
+                            entries.
                         </p>
+                        <p
+                            v-if="workspace.permissions.write && dates.includes(workspace.today)"
+                            class="rw-note"
+                        >
+                            Today: checked = Online, unchecked = Offline. Changes save immediately.
+                            Use Details for notes, images and tickets.
+                        </p>
+                        <button
+                            v-if="dates.includes(workspace.today)"
+                            type="button"
+                            class="rw-link"
+                            @click="jumpToToday"
+                        >
+                            Jump to today
+                        </button>
                     </div>
                     <div
                         class="rw-register-legend"
@@ -741,9 +888,13 @@ function saveBranch() {
                         ><span><i class="degraded"></i>Degraded</span
                         ><span><i class="maintenance"></i>Maintenance</span
                         ><span><i class="nodata"></i>No data</span>
+                        <span><i class="day-off"></i>Day off / holiday</span>
                     </div>
                 </div>
-                <div class="rw-matrix-scroll">
+                <div
+                    ref="registerScroll"
+                    class="rw-matrix-scroll"
+                >
                     <table class="rw-matrix rw-register-matrix">
                         <caption class="rw-sr-only">
                             {{
@@ -775,7 +926,11 @@ function saveBranch() {
                                     v-for="day in dates"
                                     :key="day"
                                     class="rw-register-day"
-                                    :class="{ today: day === workspace.today }"
+                                    :class="{
+                                        today: day === workspace.today,
+                                        'rw-quick-day':
+                                            day === workspace.today && workspace.permissions.write,
+                                    }"
                                     scope="col"
                                 >
                                     {{ Number(day.slice(8)) }}
@@ -800,6 +955,10 @@ function saveBranch() {
                                                     >{{ d.asset_id }} &#183; {{ d.name }}</Link
                                                 ></strong
                                             ><small>{{ d.branch.name }}</small>
+                                            <small v-if="d.status_reported_on"
+                                                >Worksheet status ·
+                                                {{ d.status_reported_on }}</small
+                                            >
                                         </div>
                                         <StatusBadge :status="d.status" />
                                     </div>
@@ -808,15 +967,43 @@ function saveBranch() {
                                     v-for="day in dates"
                                     :key="day"
                                     :class="[
-                                        observation(d.id, day)?.status || 'unchecked',
-                                        { past: day < workspace.today },
+                                        observationStatus(observation(d.id, day)),
+                                        {
+                                            past: day < workspace.today,
+                                            future: day > workspace.today,
+                                            'rw-quick-cell':
+                                                day === workspace.today &&
+                                                workspace.permissions.write,
+                                        },
                                     ]"
                                 >
+                                    <QuickCameraStatus
+                                        v-if="
+                                            day === workspace.today && workspace.permissions.write
+                                        "
+                                        :device="d"
+                                        :date="day"
+                                        :record="observation(d.id, day)"
+                                        @saved="quickStatusSaved"
+                                    />
                                     <button
-                                        :aria-label="`${d.asset_id}, ${day}: ${observation(d.id, day)?.status || 'not checked'}. ${day === workspace.today ? 'Open daily actions' : 'View read-only record'}`"
+                                        :class="{
+                                            'rw-quick-details':
+                                                day === workspace.today &&
+                                                workspace.permissions.write,
+                                        }"
+                                        :disabled="day > workspace.today"
+                                        :aria-label="`${d.asset_id}, ${day}: ${observationLabel(observation(d.id, day))}. ${day > workspace.today ? 'Future date' : day === workspace.today ? 'Open daily actions' : 'View read-only record'}`"
                                         @click="review(d, day)"
                                     >
-                                        <span>{{ observation(d.id, day)?.status || '\u2014' }}</span
+                                        <span>{{
+                                            day === workspace.today && workspace.permissions.write
+                                                ? 'Details'
+                                                : observationStatus(observation(d.id, day)) ===
+                                                    'unchecked'
+                                                  ? '\u2014'
+                                                  : observationLabel(observation(d.id, day))
+                                        }}</span
                                         ><small
                                             v-if="
                                                 observation(d.id, day)?.attachments.length ||
@@ -844,6 +1031,12 @@ function saveBranch() {
                                 </td>
                             </tr>
                         </tbody>
+                        <RegisterSummaryRows
+                            :devices="visibleCameras"
+                            :dates="dates"
+                            :observations="workspace.observations"
+                            :today="workspace.today"
+                        />
                     </table>
                 </div>
                 <p
@@ -874,12 +1067,16 @@ function saveBranch() {
                     role="group"
                     aria-label="Checklist filters"
                 >
+                    <ClusterFilter
+                        v-model="clusterFilter"
+                        :clusters="workspace.clusters || []"
+                    />
                     <label>
                         Branch
                         <select v-model="branch">
                             <option value="all">All branches</option>
                             <option
-                                v-for="b in workspace.branches"
+                                v-for="b in clusterBranches"
                                 :key="b.id"
                                 :value="String(b.id)"
                             >
@@ -971,7 +1168,7 @@ function saveBranch() {
                         ><small
                             >{{ d.branch.name }} ·
                             {{
-                                observation(d.id, workspace.date)?.checked_at
+                                hasStatusCheck(observation(d.id, workspace.date))
                                     ? 'Checked'
                                     : 'Not checked for this date'
                             }}</small
@@ -984,7 +1181,7 @@ function saveBranch() {
                         {{
                             !canActOnSelectedDate
                                 ? 'View record'
-                                : observation(d.id, workspace.date)?.checked_at
+                                : hasStatusCheck(observation(d.id, workspace.date))
                                   ? 'Review record'
                                   : 'Check camera'
                         }}
@@ -1022,10 +1219,12 @@ function saveBranch() {
             ><article class="rw-card">
                 <WorkspaceFilters
                     v-model:branch="branch"
+                    v-model:cluster="clusterFilter"
                     v-model:search="search"
                     v-model:status="statusFilter"
                     :section="section"
                     :branches="workspace.branches"
+                    :clusters="workspace.clusters || []"
                     :date="workspace.date"
                     :today="workspace.today"
                     @date-change="dateChange"
@@ -1104,10 +1303,12 @@ function saveBranch() {
             ><article class="rw-card rw-evidence-workspace">
                 <WorkspaceFilters
                     v-model:branch="branch"
+                    v-model:cluster="clusterFilter"
                     v-model:search="search"
                     v-model:status="statusFilter"
                     :section="section"
                     :branches="workspace.branches"
+                    :clusters="workspace.clusters || []"
                     :date="workspace.date"
                     :today="workspace.today"
                     @date-change="dateChange"
@@ -1172,10 +1373,12 @@ function saveBranch() {
             <article class="rw-card">
                 <WorkspaceFilters
                     v-model:branch="branch"
+                    v-model:cluster="clusterFilter"
                     v-model:search="search"
                     v-model:status="statusFilter"
                     :section="section"
                     :branches="workspace.branches"
+                    :clusters="workspace.clusters || []"
                     :date="workspace.date"
                     :today="workspace.today"
                     @date-change="dateChange"
@@ -1220,10 +1423,12 @@ function saveBranch() {
             ><article class="rw-card rw-branch-workspace">
                 <WorkspaceFilters
                     v-model:branch="branch"
+                    v-model:cluster="clusterFilter"
                     v-model:search="search"
                     v-model:status="statusFilter"
                     :section="section"
                     :branches="workspace.branches"
+                    :clusters="workspace.clusters || []"
                     :date="workspace.date"
                     :today="workspace.today"
                     @date-change="dateChange"
@@ -1239,7 +1444,10 @@ function saveBranch() {
                                 <h2>{{ b.name }}</h2>
                                 <small
                                     >{{ b.code }} · {{ b.active ? 'Active' : 'Inactive' }} ·
-                                    {{ b.address }}</small
+                                    {{ b.address
+                                    }}<template v-if="b.cluster">
+                                        · {{ b.cluster.name }}</template
+                                    ></small
                                 >
                             </div>
                             <button
@@ -1281,7 +1489,7 @@ function saveBranch() {
                                     cameras.filter(
                                         (d) =>
                                             d.branch_id === b.id &&
-                                            observation(d.id, workspace.today)?.checked_at,
+                                            hasStatusCheck(observation(d.id, workspace.today)),
                                     ).length
                                 }}
                                 of {{ cameras.filter((d) => d.branch_id === b.id).length }} cameras
@@ -1314,10 +1522,12 @@ function saveBranch() {
             ><article class="rw-card rw-incident-workspace">
                 <WorkspaceFilters
                     v-model:branch="branch"
+                    v-model:cluster="clusterFilter"
                     v-model:search="search"
                     v-model:status="statusFilter"
                     :section="section"
                     :branches="workspace.branches"
+                    :clusters="workspace.clusters || []"
                     :date="workspace.date"
                     :today="workspace.today"
                     @date-change="dateChange"
@@ -1481,15 +1691,22 @@ function saveBranch() {
             <article class="rw-card">
                 <WorkspaceFilters
                     v-model:branch="branch"
+                    v-model:cluster="clusterFilter"
                     v-model:search="search"
                     v-model:status="statusFilter"
                     :section="section"
                     :branches="workspace.branches"
+                    :clusters="workspace.clusters || []"
                     :date="workspace.date"
                     :today="workspace.today"
                     @date-change="dateChange"
                 />
 
+                <LiveTicketList
+                    :date="workspace.date"
+                    :request-ids="tickets.map(({ t }) => t.id)"
+                    :enabled="!!workspace.ticket_view_configured"
+                />
                 <div
                     v-for="{ o, t, d } in tickets"
                     :key="t.id"
@@ -1516,7 +1733,7 @@ function saveBranch() {
                         v-else-if="
                             workspace.permissions.write &&
                             o.date === workspace.today &&
-                            !['processing', 'queued'].includes(t.status)
+                            ['failed', 'unavailable', 'pending'].includes(t.status)
                         "
                         class="rw-btn"
                         @click="router.post(`/tickets/${t.id}/retry`, {}, { preserveScroll: true })"
@@ -1543,10 +1760,12 @@ function saveBranch() {
             <article class="rw-card">
                 <WorkspaceFilters
                     v-model:branch="branch"
+                    v-model:cluster="clusterFilter"
                     v-model:search="search"
                     v-model:status="statusFilter"
                     :section="section"
                     :branches="workspace.branches"
+                    :clusters="workspace.clusters || []"
                     :date="workspace.date"
                     :today="workspace.today"
                     @date-change="dateChange"
@@ -1620,6 +1839,7 @@ function saveBranch() {
                                 : workspace.branches.find((b) => b.id === Number(branch))?.name
                         }}
                     </h2>
+                    <p class="rw-note">Cluster: {{ selectedClusterLabel }}</p>
                     <p>
                         The full HTML report includes embedded screenshots, external ticket links
                         and current incident summaries. Open the downloaded report and use Print to
@@ -1641,10 +1861,12 @@ function saveBranch() {
             <article class="rw-card">
                 <WorkspaceFilters
                     v-model:branch="branch"
+                    v-model:cluster="clusterFilter"
                     v-model:search="search"
                     v-model:status="statusFilter"
                     :section="section"
                     :branches="workspace.branches"
+                    :clusters="workspace.clusters || []"
                     :date="workspace.date"
                     :today="workspace.today"
                     @date-change="dateChange"
@@ -1677,15 +1899,24 @@ function saveBranch() {
             ><article class="rw-card">
                 <WorkspaceFilters
                     v-model:branch="branch"
+                    v-model:cluster="clusterFilter"
                     v-model:search="search"
                     v-model:status="statusFilter"
                     :section="section"
                     :branches="workspace.branches"
+                    :clusters="workspace.clusters || []"
                     :date="workspace.date"
                     :today="workspace.today"
                     @date-change="dateChange"
                 />
 
+                <p
+                    v-if="clusterFilter !== 'all' || branch !== 'all'"
+                    class="rw-note padded"
+                >
+                    Accounts with access to the selected branches. All-branch accounts appear in
+                    every matching cluster.
+                </p>
                 <div class="rw-table-scroll">
                     <table class="rw-table">
                         <thead>
@@ -1737,7 +1968,7 @@ function saveBranch() {
                     <small>Latest 200 entries</small>
                 </div>
                 <div
-                    v-for="a in workspace.audits"
+                    v-for="a in visibleAudits"
                     :key="a.id"
                     class="rw-list-row"
                 >
@@ -1889,6 +2120,8 @@ function saveBranch() {
             "
             :can-write="workspace.permissions.write"
             :ticket-configured="workspace.ticket_configured"
+            :ticket-boards="workspace.ticket_boards"
+            :ticket-default-board="workspace.ticket_default_board"
             @close="
                 observationOpen = false;
                 selectedIds = [];
@@ -1955,6 +2188,18 @@ function saveBranch() {
                         required
                         maxlength="30"
                         placeholder="MKT-CENTRAL" /></label
+                ><label>
+                    Cluster
+                    <select v-model="branchForm.cluster_id">
+                        <option value="">Unassigned</option>
+                        <option
+                            v-for="cluster in workspace.clusters || []"
+                            :key="cluster.id"
+                            :value="cluster.id"
+                        >
+                            {{ cluster.name }}
+                        </option>
+                    </select> </label
                 ><label
                     >Address<input
                         v-model="branchForm.address"

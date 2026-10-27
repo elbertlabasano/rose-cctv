@@ -1,9 +1,17 @@
+export interface Cluster {
+    id: number;
+    name: string;
+    code: string;
+}
+
 export interface Branch {
     id: number;
     name: string;
     code: string;
     address: string | null;
     active: boolean;
+    cluster_id?: number | null;
+    cluster?: Cluster | null;
 }
 
 export interface Device {
@@ -15,6 +23,7 @@ export interface Device {
     type: string;
     status: string;
     status_observed_at: string | null;
+    status_reported_on?: string | null;
     parent_id: number | null;
     location: string | null;
     brand: string | null;
@@ -54,11 +63,21 @@ export interface Observation {
     device_id: number;
     date: string;
     status: string | null;
+    check_result?: string | null;
+    import_source?: string | null;
+    import_reference?: string | null;
+    is_checked?: boolean;
     notes: string | null;
     checked_at: string | null;
     checker: string | null;
     attachments: Evidence[];
     ticket: Ticket | null;
+}
+
+export interface QuickStatusResult {
+    device: Pick<Device, 'id' | 'status' | 'status_observed_at' | 'status_reported_on'>;
+    observation: Observation;
+    outages: Workspace['outages'];
 }
 
 export interface IncidentLog {
@@ -113,6 +132,7 @@ export interface Account {
 }
 
 export interface Workspace {
+    clusters?: Cluster[];
     today: string;
     date: string;
     branches: Branch[];
@@ -137,6 +157,7 @@ export interface Workspace {
     accounts: Account[];
     audits: {
         id: number;
+        branch_id?: number | null;
         subject_type: string;
         subject_id: number;
         action: string;
@@ -146,4 +167,7 @@ export interface Workspace {
     }[];
     permissions: { write: boolean; manage: boolean; verify: boolean; admin: boolean };
     ticket_configured: boolean;
+    ticket_view_configured?: boolean;
+    ticket_boards?: { id: number; name: string }[];
+    ticket_default_board?: number | null;
 }

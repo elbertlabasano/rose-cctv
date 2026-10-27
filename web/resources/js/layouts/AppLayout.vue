@@ -59,6 +59,7 @@ const menuGroups = [
             ['devices', 'Device management', 'devices', '\u25a5'],
             ['reports', 'Reports', 'reports', '\u2197'],
             ['users', 'User management', 'users', '\u2659'],
+            ['backups', 'Manual backup', 'backups', '\u21e9'],
         ],
     },
 ];
@@ -66,7 +67,9 @@ const menuGroups = [
 const groups = computed(() =>
     menuGroups.map((group) => ({
         ...group,
-        items: group.items.filter(([id]) => id !== 'users' || user.value.user.role === 'admin'),
+        items: group.items.filter(
+            ([id]) => !['users', 'backups'].includes(id) || user.value.user.role === 'admin',
+        ),
     })),
 );
 

@@ -16,6 +16,10 @@ const labels: Record<string, string> = {
     maintenance: 'Maintenance',
     unknown: 'Unknown',
     unchecked: 'Not checked',
+    day_off: 'Day off',
+    holiday: 'Holiday',
+    no_device: 'No device',
+    alert: 'Alert',
 };
 
 const distribution = computed(() =>
@@ -26,7 +30,12 @@ const distribution = computed(() =>
     })),
 );
 
-const checked = computed(() => props.days.filter((day) => day.status !== 'unchecked').length);
+const checked = computed(
+    () =>
+        props.days.filter((day) =>
+            ['online', 'offline', 'degraded', 'maintenance', 'unknown'].includes(day.status),
+        ).length,
+);
 const maxMinutes = computed(() => Math.max(1, ...props.days.map((day) => day.downtime_minutes)));
 const totalMinutes = computed(() => props.days.reduce((sum, day) => sum + day.downtime_minutes, 0));
 
@@ -152,6 +161,19 @@ function inspect(day: DeviceDay) {
 </template>
 
 <style scoped>
+.day_off,
+.holiday {
+    background: #fff4c8;
+    color: #8a691d;
+}
+.no_device {
+    background: #e7eef7;
+    color: #426282;
+}
+.alert {
+    background: #fde8d8;
+    color: #9b4f1f;
+}
 .device-trends {
     padding: 22px;
     min-width: 0;

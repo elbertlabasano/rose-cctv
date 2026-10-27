@@ -2,61 +2,45 @@
 
 namespace Database\Seeders;
 
-use App\Models\Branch;
 use App\Models\Device;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class DeviceSeeder extends Seeder
 {
     public function run(): void
     {
-        // Also support running this seeder on its own.
-        $this->call(LocationSeeder::class);
+        DB::transaction(function () {
+            $this->call(LocationSeeder::class);
+            foreach (MonitoringRoster::clusters() as $group) {
+                foreach ($group['branches'] as $entry) {
+                    $branch = MonitoringRoster::branch($entry);
+                    // Reuse an existing camera regardless of its asset ID or saved status.
+                    $existing = $branch->devices()->where('type', 'IP Camera')->count();
+                    if ($existing > 0) {
+                        if ($existing > 1) {
+                            $this->command?->warn('Preserved '.$existing.' existing IP cameras at '.$branch->name.'; no extra camera was created.');
+                        }
 
-        foreach (LocationSeeder::LOCATIONS as $code => $name) {
-            $branch = Branch::where('code', $code)->orWhere('name', $name)->firstOrFail();
+                        continue;
+                    }
 
-            $recorder = Device::firstOrCreate(
-                ['asset_id' => "NVR-{$code}-001"],
-                [
-                    'name' => 'Main recorder',
-                    'branch_id' => $branch->id,
-                    'type' => 'NVR',
-                    'location' => 'Security office',
-                    'channels' => 8,
-                    'status' => 'unknown',
-                    'disk_health' => 'Unknown',
-                    'owner' => 'CCTV Operations',
-                    'notes' => 'Starter device from seeder. Update details to match installed equipment.',
-                ],
-            );
-
-            foreach ([1 => 'Main Entrance', 2 => 'Cashier Area'] as $channel => $location) {
-                $assetId = sprintf('CAM-%s-%03d', $code, $channel);
-
-                if (Device::where('asset_id', $assetId)->exists()) {
-                    continue;
+                    $assetId = 'CAM-'.$entry['code'].'-001';
+                    if (Device::where('asset_id', $assetId)->exists()) {
+                        throw new RuntimeException('Asset ID conflict for '.$assetId.'. Seeding was rolled back; no existing device was moved or changed.');
+                    }
+                    Device::create([
+                        'asset_id' => $assetId,
+                        'name' => 'Branch IP Camera',
+                        'branch_id' => $branch->id,
+                        'type' => 'IP Camera',
+                        'status' => 'unknown',
+                        'owner' => 'CCTV Operations',
+                        'notes' => 'One IP camera monitoring entry for this branch, from the October 2026 branch roster. Confirm installed equipment details before checking status.',
+                    ]);
                 }
-
-                // Never attach a starter camera to an incompatible existing asset/channel.
-                $canConnect = (int) $recorder->branch_id === (int) $branch->id
-                    && in_array($recorder->type, ['DVR', 'NVR'], true)
-                    && $recorder->channels >= $channel
-                    && ! $recorder->children()->where('channel', $channel)->exists();
-
-                Device::create([
-                    'asset_id' => $assetId,
-                    'name' => $location,
-                    'branch_id' => $branch->id,
-                    'type' => 'IP Camera',
-                    'location' => $location,
-                    'parent_id' => $canConnect ? $recorder->id : null,
-                    'channel' => $canConnect ? $channel : null,
-                    'status' => 'unknown',
-                    'owner' => 'CCTV Operations',
-                    'notes' => 'Starter camera from seeder. Update details to match installed equipment.',
-                ]);
             }
-        }
+        });
     }
 }

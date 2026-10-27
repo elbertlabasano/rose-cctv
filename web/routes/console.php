@@ -2,8 +2,16 @@
 
 use App\Models\User;
 use App\Services\AccessService;
+use App\Services\OctoberMonitoringImportService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Validator;
+
+Artisan::command('rosewatch:import-october-2026 {--dry-run} {--initialize-status}', function (OctoberMonitoringImportService $import) {
+    $result = $import->run((bool) $this->option('dry-run'), (bool) $this->option('initialize-status'));
+    $this->line(json_encode($result, JSON_PRETTY_PRINT));
+
+    return 0;
+})->purpose('Import the reviewed October worksheet without overwriting existing daily records');
 
 Artisan::command('rosewatch:create-user {email} {--name=} {--role=admin}', function () {
     $email = strtolower(trim($this->argument('email')));

@@ -1,0 +1,513 @@
+{
+    "source": "OCTOBER 2026.xlsx, Sheet1 (2), branch rows 9-120",
+    "clusters": [
+        {
+            "code": "DOWNTOWN-SOUTH",
+            "name": "DOWNTOWN SOUTH",
+            "branches": [
+                {
+                    "code": "AGDAO-1",
+                    "name": "AGDAO 1"
+                },
+                {
+                    "code": "AGDAO-2",
+                    "name": "AGDAO 2"
+                },
+                {
+                    "code": "BOULEVARD-1",
+                    "name": "BOULEVARD 1"
+                },
+                {
+                    "code": "BOULEVARD-2",
+                    "name": "BOULEVARD 2"
+                },
+                {
+                    "code": "MAA-1",
+                    "name": "MAA 1"
+                },
+                {
+                    "code": "MAA-2",
+                    "name": "MAA 2"
+                },
+                {
+                    "code": "MATINA-APLAYA",
+                    "name": "MATINA APLAYA"
+                },
+                {
+                    "code": "MATINA-PANGI",
+                    "name": "MATINA PANGI"
+                },
+                {
+                    "code": "NHA",
+                    "name": "NHA"
+                },
+                {
+                    "code": "OBRERO",
+                    "name": "OBRERO"
+                },
+                {
+                    "code": "R-CASTILLO",
+                    "name": "R.CASTILLO"
+                },
+                {
+                    "code": "SAN-PEDRO",
+                    "name": "SAN PEDRO"
+                }
+            ]
+        },
+        {
+            "code": "DOWNTOWN-NORTH",
+            "name": "DOWNTOWN NORTH",
+            "branches": [
+                {
+                    "code": "BAJADA",
+                    "name": "BAJADA"
+                },
+                {
+                    "code": "CABANTIAN-1",
+                    "name": "CABANTIAN 1"
+                },
+                {
+                    "code": "CABANTIAN-2",
+                    "name": "CABANTIAN 2"
+                },
+                {
+                    "code": "DAMOSA-1",
+                    "name": "DAMOSA 1"
+                },
+                {
+                    "code": "DAMOSA-2",
+                    "name": "DAMOSA 2"
+                },
+                {
+                    "code": "INDANGAN-1",
+                    "name": "INDANGAN 1"
+                },
+                {
+                    "code": "INDANGAN-2",
+                    "name": "INDANGAN 2"
+                },
+                {
+                    "code": "LASANG",
+                    "name": "LASANG"
+                },
+                {
+                    "code": "MILAN",
+                    "name": "MILAN"
+                },
+                {
+                    "code": "PAGASA",
+                    "name": "PAGASA"
+                },
+                {
+                    "code": "PAG-ASA-CONSTRUCTION",
+                    "name": "PAG-ASA CONSTRUCTION"
+                },
+                {
+                    "code": "PANACAN",
+                    "name": "PANACAN"
+                },
+                {
+                    "code": "TIBUNGCO-1",
+                    "name": "TIBUNGCO 1"
+                },
+                {
+                    "code": "TIBUNGCO-2",
+                    "name": "TIBUNGCO 2"
+                },
+                {
+                    "code": "TIBUNGCO-3",
+                    "name": "TIBUNGCO 3"
+                },
+                {
+                    "code": "TIGATTO",
+                    "name": "TIGATTO"
+                }
+            ]
+        },
+        {
+            "code": "BANKID",
+            "name": "BANKID",
+            "branches": [
+                {
+                    "code": "BANSALAN-1",
+                    "name": "BANSALAN 1"
+                },
+                {
+                    "code": "BANSALAN-2",
+                    "name": "BANSALAN 2"
+                },
+                {
+                    "code": "BANSALAN-3",
+                    "name": "BANSALAN 3"
+                },
+                {
+                    "code": "KIDAPAWAN-2",
+                    "name": "KIDAPAWAN 2"
+                },
+                {
+                    "code": "KIDAPAWAN-3",
+                    "name": "KIDAPAWAN 3"
+                },
+                {
+                    "code": "MAKILALA",
+                    "name": "MAKILALA"
+                },
+                {
+                    "code": "MATANAO",
+                    "name": "MATANAO"
+                }
+            ]
+        },
+        {
+            "code": "TAGUM-PANABO",
+            "name": "TAGUM/PANABO",
+            "branches": [
+                {
+                    "code": "CALICLIC",
+                    "name": "CALICLIC"
+                },
+                {
+                    "code": "CARMEN",
+                    "name": "CARMEN"
+                },
+                {
+                    "code": "PANABO-1",
+                    "name": "PANABO 1"
+                },
+                {
+                    "code": "PANABO-3",
+                    "name": "PANABO 3"
+                },
+                {
+                    "code": "PANABO-4",
+                    "name": "PANABO 4"
+                },
+                {
+                    "code": "PANABO-6",
+                    "name": "PANABO 6"
+                },
+                {
+                    "code": "TAGUM-1",
+                    "name": "TAGUM 1"
+                },
+                {
+                    "code": "TAGUM-10",
+                    "name": "TAGUM 10"
+                },
+                {
+                    "code": "TAGUM-3",
+                    "name": "TAGUM 3"
+                },
+                {
+                    "code": "TAGUM-4",
+                    "name": "TAGUM 4"
+                },
+                {
+                    "code": "TAGUM-5",
+                    "name": "TAGUM 5"
+                },
+                {
+                    "code": "TAGUM-6",
+                    "name": "TAGUM 6"
+                },
+                {
+                    "code": "TAGUM-7",
+                    "name": "TAGUM 7"
+                },
+                {
+                    "code": "TAGUM-8",
+                    "name": "TAGUM 8"
+                },
+                {
+                    "code": "TAGUM-9",
+                    "name": "TAGUM 9"
+                },
+                {
+                    "code": "TAGUM-2",
+                    "name": "TAGUM 2"
+                }
+            ]
+        },
+        {
+            "code": "CALINAN-TORIL",
+            "name": "CALINAN/TORIL",
+            "branches": [
+                {
+                    "code": "CALINAN-2",
+                    "name": "CALINAN 2"
+                },
+                {
+                    "code": "CALINAN-3",
+                    "name": "CALINAN 3"
+                },
+                {
+                    "code": "CALINAN-4",
+                    "name": "CALINAN 4"
+                },
+                {
+                    "code": "GREEN-MEADOWS",
+                    "name": "GREEN MEADOWS"
+                },
+                {
+                    "code": "IWHA",
+                    "name": "IWHA"
+                },
+                {
+                    "code": "LOS-AMIGOS",
+                    "name": "LOS AMIGOS"
+                },
+                {
+                    "code": "MINTAL",
+                    "name": "MINTAL"
+                },
+                {
+                    "code": "PUAN",
+                    "name": "PUAN"
+                },
+                {
+                    "code": "TORIL-1",
+                    "name": "TORIL 1"
+                },
+                {
+                    "code": "TORIL-2",
+                    "name": "TORIL 2"
+                },
+                {
+                    "code": "TORIL-4",
+                    "name": "TORIL 4"
+                },
+                {
+                    "code": "TORIL-5",
+                    "name": "TORIL 5"
+                },
+                {
+                    "code": "TORIL-6",
+                    "name": "TORIL 6"
+                },
+                {
+                    "code": "TORIL-8",
+                    "name": "TORIL 8"
+                }
+            ]
+        },
+        {
+            "code": "DIGOS",
+            "name": "DIGOS",
+            "branches": [
+                {
+                    "code": "DIGOS-1",
+                    "name": "DIGOS 1"
+                },
+                {
+                    "code": "DIGOS-10",
+                    "name": "DIGOS 10"
+                },
+                {
+                    "code": "DIGOS-11",
+                    "name": "DIGOS 11"
+                },
+                {
+                    "code": "DIGOS-2",
+                    "name": "DIGOS 2"
+                },
+                {
+                    "code": "DIGOS-3",
+                    "name": "DIGOS 3"
+                },
+                {
+                    "code": "DIGOS-4",
+                    "name": "DIGOS 4"
+                },
+                {
+                    "code": "DIGOS-5",
+                    "name": "DIGOS 5"
+                },
+                {
+                    "code": "DIGOS-6",
+                    "name": "DIGOS 6"
+                },
+                {
+                    "code": "DIGOS-7",
+                    "name": "DIGOS 7"
+                },
+                {
+                    "code": "DIGOS-9",
+                    "name": "DIGOS 9"
+                },
+                {
+                    "code": "HAGONOY",
+                    "name": "HAGONOY"
+                },
+                {
+                    "code": "KIBLAWAN",
+                    "name": "KIBLAWAN"
+                },
+                {
+                    "code": "MALALAG",
+                    "name": "MALALAG"
+                },
+                {
+                    "code": "PADADA-1",
+                    "name": "PADADA 1"
+                },
+                {
+                    "code": "PADADA-2",
+                    "name": "PADADA 2"
+                },
+                {
+                    "code": "STA-CRUZ-1",
+                    "name": "STA.CRUZ 1"
+                },
+                {
+                    "code": "STA-CRUZ-2",
+                    "name": "STA.CRUZ 2"
+                },
+                {
+                    "code": "STA-MARIA",
+                    "name": "STA.MARIA"
+                }
+            ]
+        },
+        {
+            "code": "INDANGAN",
+            "name": "INDANGAN",
+            "branches": [
+                {
+                    "code": "EMD-SHOP",
+                    "name": "EMD SHOP"
+                },
+                {
+                    "code": "INDANGAN-COMMISARY",
+                    "name": "INDANGAN COMMISARY"
+                },
+                {
+                    "code": "INDANGAN-SIR-DAN-OFFICE",
+                    "name": "INDANGAN SIR DAN OFFICE"
+                },
+                {
+                    "code": "INDANGAN-SIR-DAN-OFFICE-2",
+                    "name": "INDANGAN SIR DAN OFFICE 2"
+                },
+                {
+                    "code": "INDANGAN-WAREHOUSE",
+                    "name": "INDANGAN WAREHOUSE"
+                }
+            ]
+        },
+        {
+            "code": "GENSAN",
+            "name": "GENSAN",
+            "branches": [
+                {
+                    "code": "GENSAN-1",
+                    "name": "GENSAN 1"
+                },
+                {
+                    "code": "GENSAN-2",
+                    "name": "GENSAN 2"
+                },
+                {
+                    "code": "GENSAN-3",
+                    "name": "GENSAN 3"
+                },
+                {
+                    "code": "GENSAN-4",
+                    "name": "GENSAN 4"
+                },
+                {
+                    "code": "POLOMOLOK-1",
+                    "name": "POLOMOLOK 1"
+                },
+                {
+                    "code": "POLOMOLOK-2",
+                    "name": "POLOMOLOK 2"
+                },
+                {
+                    "code": "POLOMOLOK-3",
+                    "name": "POLOMOLOK 3"
+                }
+            ]
+        },
+        {
+            "code": "CEBU",
+            "name": "CEBU",
+            "branches": [
+                {
+                    "code": "MARINGONDON",
+                    "name": "MARINGONDON"
+                }
+            ]
+        },
+        {
+            "code": "LEYTE",
+            "name": "LEYTE",
+            "branches": [
+                {
+                    "code": "BATO-1",
+                    "name": "BATO 1"
+                },
+                {
+                    "code": "BATO-2",
+                    "name": "BATO 2"
+                },
+                {
+                    "code": "BATO-3",
+                    "name": "BATO 3"
+                },
+                {
+                    "code": "COMBADO",
+                    "name": "COMBADO"
+                },
+                {
+                    "code": "HILONGOS-1",
+                    "name": "HILONGOS 1"
+                },
+                {
+                    "code": "HILONGOS-2",
+                    "name": "HILONGOS 2"
+                },
+                {
+                    "code": "HILONGOS-3",
+                    "name": "HILONGOS 3"
+                },
+                {
+                    "code": "HINDANG",
+                    "name": "HINDANG"
+                },
+                {
+                    "code": "INOPACAN",
+                    "name": "INOPACAN"
+                },
+                {
+                    "code": "MAASIN-1",
+                    "name": "MAASIN 1"
+                },
+                {
+                    "code": "MAASIN-2",
+                    "name": "MAASIN 2"
+                },
+                {
+                    "code": "MAASIN-3",
+                    "name": "MAASIN 3"
+                },
+                {
+                    "code": "ORMOC",
+                    "name": "ORMOC"
+                },
+                {
+                    "code": "SUGOD-1",
+                    "name": "SUGOD 1"
+                },
+                {
+                    "code": "SUGOD-2",
+                    "name": "SUGOD 2"
+                },
+                {
+                    "code": "SUGOD-3",
+                    "name": "SUGOD 3"
+                }
+            ]
+        }
+    ]
+}

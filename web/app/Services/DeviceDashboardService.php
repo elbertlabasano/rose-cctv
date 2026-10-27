@@ -143,6 +143,10 @@ class DeviceDashboardService
             'device_id' => $observation->device_id,
             'date' => $observation->date->toDateString(),
             'status' => $observation->status,
+            'check_result' => $observation->check_result,
+            'import_source' => $observation->import_source,
+            'import_reference' => $observation->import_reference,
+            'is_checked' => $observation->hasStatusCheck(),
             'notes' => $observation->notes,
             'checked_at' => $observation->checked_at?->toIso8601String(),
             'checker' => $observation->checker?->name,
@@ -190,7 +194,7 @@ class DeviceDashboardService
             }
             $days[] = [
                 'date' => $day->toDateString(),
-                'status' => $record?->checked_at && $record->status ? $record->status : 'unchecked',
+                'status' => $record?->displayStatus() ?? 'unchecked',
                 'downtime_minutes' => round($minutes, 1),
                 'record' => $record ? $this->observation($record) : null,
             ];

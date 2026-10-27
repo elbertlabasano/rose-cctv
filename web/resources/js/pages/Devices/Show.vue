@@ -9,6 +9,7 @@ import DeviceTrends from '../../components/DeviceTrends.vue';
 import HistoryPagination from '../../components/HistoryPagination.vue';
 import StatusBadge from '../../components/StatusBadge.vue';
 import FormErrors from '../../components/FormErrors.vue';
+import { observationStatus } from '../../observation-status';
 
 const props = defineProps<{ dashboard: DeviceDashboardData }>();
 
@@ -104,10 +105,11 @@ function duration(minutes: number) {
                     {{ dashboard.device.branch.name }} &middot; {{ dashboard.device.type }}
                 </p>
                 <div class="dd-current">
-                    <StatusBadge :status="dashboard.device.status" /><span
-                        >Last status recorded:
-                        {{ timeLabel(dashboard.device.status_observed_at) }}</span
-                    >
+                    <StatusBadge :status="dashboard.device.status" /><span>{{
+                        dashboard.device.status_reported_on
+                            ? `Worksheet status as of ${dashboard.device.status_reported_on}`
+                            : `Last status recorded: ${timeLabel(dashboard.device.status_observed_at)}`
+                    }}</span>
                 </div>
             </div>
             <Link
@@ -335,11 +337,17 @@ function duration(minutes: number) {
                             >
                                 <td>{{ dateLabel(item.date) }}</td>
                                 <td>
-                                    <StatusBadge :status="item.checked_at ? item.status : null" />
+                                    <StatusBadge :status="observationStatus(item)" />
                                 </td>
                                 <td>
-                                    {{ item.checker || 'Not checked'
-                                    }}<small>{{ timeLabel(item.checked_at) }}</small>
+                                    {{
+                                        item.checker ||
+                                        (item.import_source ? 'Imported worksheet' : 'Not checked')
+                                    }}<small>{{
+                                        item.import_source && !item.checked_at
+                                            ? 'Check time not supplied'
+                                            : timeLabel(item.checked_at)
+                                    }}</small>
                                 </td>
                                 <td>
                                     {{ item.attachments.length }} image(s)<small v-if="item.ticket"
@@ -550,10 +558,13 @@ function duration(minutes: number) {
             @close="record = null"
         >
             <template v-if="record"
-                ><StatusBadge :status="record.checked_at ? record.status : null" />
+                ><StatusBadge :status="observationStatus(record)" />
                 <p class="rw-note">
-                    Checked by {{ record.checker || 'Not checked' }} &middot;
-                    {{ timeLabel(record.checked_at) }}
+                    {{
+                        record.import_source
+                            ? `Source: ${record.import_source} · ${record.import_reference}. Check time and operator not supplied.`
+                            : `Checked by ${record.checker || 'Not checked'} · ${timeLabel(record.checked_at)}`
+                    }}
                 </p>
                 <p class="dd-notes">{{ record.notes || 'No notes saved for this record.' }}</p>
                 <div

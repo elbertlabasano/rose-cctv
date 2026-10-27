@@ -76,6 +76,7 @@ class DeviceService
             $device->fill($data);
             if ($changed) {
                 $device->status_observed_at = now();
+                $device->status_reported_on = null;
             }
             $device->save();
             if ($changed) {

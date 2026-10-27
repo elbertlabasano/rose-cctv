@@ -218,7 +218,6 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 20px;
-    border-bottom: 1px solid #e8cdb8;
     padding-bottom: 20px;
     margin-bottom: 22px;
 }
@@ -1463,6 +1462,20 @@
     font-size: 10px;
     text-transform: capitalize;
 }
+.rw-register-matrix td.rw-quick-cell {
+    width: 110px;
+    min-width: 110px;
+}
+.rw-register-matrix th.rw-register-day.rw-quick-day {
+    width: 110px;
+    min-width: 110px;
+}
+.rw-register-matrix td button.rw-quick-details {
+    min-height: 27px;
+    padding: 4px;
+    flex-direction: row;
+    font-size: 10px;
+}
 .rw-register-matrix td.degraded {
     background: #fff2d8;
     color: #916014;
@@ -1470,6 +1483,34 @@
 .rw-register-matrix td.maintenance {
     background: #ebf0fc;
     color: #395d9a;
+}
+.rw-register-matrix td.day_off,
+.rw-register-matrix td.holiday,
+.rw-status.day_off,
+.rw-status.holiday {
+    background: #fff4c8;
+    color: #8a691d;
+}
+.rw-register-matrix td.no_device,
+.rw-status.no_device {
+    background: #e7eef7;
+    color: #426282;
+}
+.rw-register-matrix td.alert,
+.rw-status.alert {
+    background: #fde8d8;
+    color: #9b4f1f;
+}
+.rw-register-matrix td.future {
+    background: #f4f5f3;
+    color: #a4ada9;
+}
+.rw-register-matrix td.future button:disabled {
+    cursor: default;
+    opacity: 1;
+}
+.rw-register-legend .day-off {
+    background: #d6b33d;
 }
 .rw-matrix-camera {
     display: flex;
@@ -1539,10 +1580,15 @@
         padding: 16px 14px;
     }
     .rw-register-matrix .sticky-camera {
-        width: 225px;
-        min-width: 225px;
-        max-width: 225px;
+        width: 175px;
+        min-width: 175px;
+        max-width: 175px;
         padding: 12px;
+    }
+    .rw-register-matrix td.rw-quick-cell,
+    .rw-register-matrix th.rw-register-day.rw-quick-day {
+        width: 110px;
+        min-width: 110px;
     }
     .rw-matrix-camera {
         align-items: flex-start;
@@ -1573,9 +1619,20 @@
 }
 @media (max-width: 600px) {
     .rw-register-month-label {
-        left: 225px;
+        left: 175px;
         width: calc(100vw - 270px);
-        width: calc(100cqw - 225px);
+        width: calc(100cqw - 175px);
+    }
+}
+@media (max-width: 360px) {
+    .rw-register-matrix .sticky-camera {
+        width: 135px;
+        min-width: 135px;
+        max-width: 135px;
+    }
+    .rw-register-month-label {
+        left: 135px;
+        width: calc(100cqw - 135px);
     }
 }
 

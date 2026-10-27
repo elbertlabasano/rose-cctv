@@ -8,12 +8,53 @@ use App\Models\Observation;
 use App\Models\TicketRequest;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ObservationService
 {
     public function __construct(private AccessService $access, private AttachmentService $files, private DeviceService $devices, private AuditService $audit) {}
+
+    public function quickStatus(User $actor, array $data): Observation
+    {
+        if (($data['date'] ?? null) !== now()->toDateString()) {
+            $this->fail('Quick status checks are allowed only for today in Philippine time.');
+        }
+        abort_unless($this->access->write($actor), 403);
+        if (! in_array($data['status'] ?? null, ['online', 'offline'], true)) {
+            $this->fail('Choose Online or Offline.');
+        }
+
+        return DB::transaction(function () use ($actor, $data) {
+            $device = Device::whereKey($data['device_id'])->lockForUpdate()->firstOrFail();
+            $this->access->branch($actor, $device->branch_id);
+            if (! in_array($device->type, ['IP Camera', 'Analog Camera'])) {
+                $this->fail('Daily camera checks only apply to cameras.');
+            }
+            $record = Observation::firstOrCreate(['device_id' => $device->id, 'date' => $data['date']]);
+            $reason = 'Marked '.ucfirst($data['status']).' from the camera register.';
+            $this->markStatus($actor, $device, $record, $data['status'], $reason);
+            // Status-only actions preserve notes, evidence and ticket requests.
+            $record->save();
+            $this->audit->record($record, 'Camera quick status saved', $reason, $device->branch_id,
+                ['status' => $record->status, 'date' => $data['date']]);
+
+            return $record;
+        });
+    }
+
+    private function markStatus(User $actor, Device $device, Observation $record, string $status, string $notes): void
+    {
+        $record->status = $status;
+        $record->checked_at = now();
+        $record->checked_by = $actor->id;
+        $record->check_result = null;
+        $record->import_source = null;
+        $record->import_reference = null;
+        $device->update(['status' => $status, 'status_observed_at' => now(), 'status_reported_on' => null]);
+        $this->devices->transition($device, $status, CarbonImmutable::now(), $notes);
+    }
 
     public function save(User $actor, array $data): void
     {
@@ -41,20 +82,15 @@ class ObservationService
                 }
                 $record = Observation::firstOrCreate(['device_id' => $id, 'date' => $data['date']]);
                 if ($data['update_status']) {
-                    $record->status = $data['status'];
-                    $record->checked_at = now();
-                    $record->checked_by = $actor->id;
-                    // Historical corrections do not rewrite the present physical state or outage timestamps.
-                    if ($data['date'] === now()->toDateString()) {
-                        $device->update(['status' => $data['status'], 'status_observed_at' => now()]);
-                        $this->devices->transition($device, $data['status'], CarbonImmutable::now(), $data['notes']);
-                    }
+                    $this->markStatus($actor, $device, $record, $data['status'], $data['notes']);
                 }
                 $record->notes = $data['notes'];
                 $record->save();
                 if ($data['attach_images']) {
                     $existingCount = $record->attachments()->count();
-                    if (!$existingCount && empty($data['images'])) $this->fail('Capture or upload at least one image.');
+                    if (! $existingCount && empty($data['images'])) {
+                        $this->fail('Capture or upload at least one image.');
+                    }
                     $remove = $data['remove_attachment_ids'] ?? [];
                     $owned = $record->attachments()->whereIn('id', $remove)->get();
                     if ($owned->count() !== count($remove)) {
@@ -71,9 +107,9 @@ class ObservationService
                     }
                 }
                 if ($data['create_ticket']) {
-                    $ticket = TicketRequest::firstOrCreate(['observation_id' => $record->id], ['requested_by' => $actor->id, 'title' => $data['ticket_title'], 'idempotency_key' => (string) Str::uuid(), 'payload' => ['camera_id' => $device->asset_id, 'camera_name' => $device->name, 'branch' => $device->branch->name, 'date' => $data['date'], 'status' => $record->status, 'notes' => $record->notes, 'title' => $data['ticket_title'], 'attachment_ids' => $record->attachments()->pluck('id')->all(), 'requested_by' => $actor->name]]);
-                    if (! $ticket->external_url && ! in_array($ticket->status, ['processing', 'queued'])) {
-                        $configured = (bool) config('tickets.endpoint');
+                    $ticket = TicketRequest::firstOrCreate(['observation_id' => $record->id], ['requested_by' => $actor->id, 'title' => $data['ticket_title'], 'idempotency_key' => (string) Str::uuid(), 'payload' => ['camera_id' => $device->asset_id, 'camera_name' => $device->name, 'branch' => $device->branch->name, 'date' => $data['date'], 'status' => $record->status, 'notes' => $record->notes, 'title' => $data['ticket_title'], 'attachment_ids' => $record->attachments()->pluck('id')->all(), 'requested_by' => $actor->name, 'requester_email' => $actor->email, 'board_id' => $data['ticket_board_id'] ?? config('tickets.board_id')]]);
+                    if (! $ticket->external_url && in_array($ticket->status, ['pending', 'failed', 'unavailable'])) {
+                        $configured = app(TicketIntegration::class)->canCreate();
                         $ticket->update(['status' => $configured ? 'queued' : 'unavailable', 'error' => $configured ? null : 'Ticket provider is not connected. Your record is saved; retry after configuration.']);
                         if ($configured) {
                             CreateExternalTicket::dispatch($ticket->id)->afterCommit();

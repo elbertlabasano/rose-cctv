@@ -5,6 +5,6 @@ defineProps<{ status: string | null | undefined }>();
     <span
         class="rw-status"
         :class="status || 'unknown'"
-        >{{ status ? status.replaceAll('_', ' ') : 'Not checked' }}</span
+        >{{ status && status !== 'unchecked' ? status.replaceAll('_', ' ') : 'Not checked' }}</span
     >
 </template>

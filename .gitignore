@@ -1,3 +1,4 @@
 /tmp/*-browser-review/
 /tmp/npm-runtime/
 /tmp/login-*.png
+/tmp/tickets-*/

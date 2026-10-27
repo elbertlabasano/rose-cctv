@@ -4,30 +4,27 @@ namespace Database\Seeders;
 
 use App\Models\Branch;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class LocationSeeder extends Seeder
 {
-    // Starter locations from the mockup; locations are branches in the application.
-    public const LOCATIONS = [
-        'MKT' => 'Makati Central',
-        'QC' => 'Quezon City',
-        'CBU' => 'Cebu IT Park',
-        'DVO' => 'Davao Downtown',
-    ];
-
     public function run(): void
     {
-        foreach (self::LOCATIONS as $code => $name) {
-            // Match either unique identifier without renaming an existing branch.
-            if (Branch::where('code', $code)->orWhere('name', $name)->exists()) {
-                continue;
+        DB::transaction(function () {
+            $this->call(ClusterSeeder::class);
+            foreach (MonitoringRoster::clusters() as $group) {
+                $cluster = MonitoringRoster::cluster($group);
+                foreach ($group['branches'] as $entry) {
+                    $branch = MonitoringRoster::branch($entry);
+                    if (! $branch) {
+                        Branch::create([...$entry, 'cluster_id' => $cluster->id, 'active' => true]);
+                    } elseif ($branch->cluster_id === null) {
+                        $branch->update(['cluster_id' => $cluster->id]);
+                    } elseif ((int) $branch->cluster_id !== (int) $cluster->id) {
+                        $this->command?->warn('Preserved the existing cluster assignment for '.$branch->name.'.');
+                    }
+                }
             }
-
-            Branch::create([
-                'code' => $code,
-                'name' => $name,
-                'active' => true,
-            ]);
-        }
+        });
     }
 }

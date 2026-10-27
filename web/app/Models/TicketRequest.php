@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class TicketRequest extends Model
 {
+    protected $attributes = ['status' => 'pending'];
+
     protected $guarded = ['id'];
 
     protected function casts(): array

@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Branch } from '../types';
+import type { Branch, Cluster } from '../types';
+import ClusterFilter from './ClusterFilter.vue';
+import { branchMatchesCluster } from '../workspace-scope';
 
 const props = defineProps<{
     section: string;
     branches: Branch[];
+    clusters: Cluster[];
     date: string;
     today: string;
 }>();
 
 const branch = defineModel<string>('branch', { required: true });
+const cluster = defineModel<string>('cluster', { required: true });
 const search = defineModel<string>('search', { required: true });
 const status = defineModel<string>('status', { required: true });
 
@@ -21,11 +25,15 @@ const hasDate = computed(() =>
 
 const searchPlaceholder = computed(() => {
     if (props.section === 'users') return 'Name, email, or role';
-    if (props.section === 'branches') return 'Branch name, code, or address';
+    if (props.section === 'branches') return 'Branch, cluster, code, or address';
     if (props.section === 'incidents') return 'Incident, camera, or branch';
     if (props.section === 'reminders') return 'Search reminders';
     return 'Camera, device, or branch';
 });
+
+const clusterBranches = computed(() =>
+    props.branches.filter((item) => branchMatchesCluster(item, cluster.value)),
+);
 </script>
 
 <template>
@@ -35,12 +43,16 @@ const searchPlaceholder = computed(() => {
         role="group"
         :aria-label="`${section} filters`"
     >
-        <label v-if="section !== 'users'">
+        <ClusterFilter
+            v-model="cluster"
+            :clusters="clusters"
+        />
+        <label>
             Branch
             <select v-model="branch">
                 <option value="all">All branches</option>
                 <option
-                    v-for="item in branches"
+                    v-for="item in clusterBranches"
                     :key="item.id"
                     :value="String(item.id)"
                 >

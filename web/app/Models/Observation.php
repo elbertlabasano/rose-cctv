@@ -18,6 +18,23 @@ class Observation extends Model
         return $this->belongsTo(Device::class);
     }
 
+    public function hasStatusCheck(): bool
+    {
+        return $this->status !== null && ($this->checked_at !== null || $this->import_source !== null);
+    }
+
+    public function displayStatus(): string
+    {
+        return $this->hasStatusCheck() ? $this->status : ($this->check_result ?? 'unchecked');
+    }
+
+    public function displayLabel(): string
+    {
+        $status = $this->displayStatus();
+
+        return $status === 'unchecked' ? 'Not checked' : str_replace('_', ' ', $status);
+    }
+
     public function checker()
     {
         return $this->belongsTo(User::class, 'checked_by');

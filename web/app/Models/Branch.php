@@ -18,6 +18,11 @@ class Branch extends Model
         return $this->hasMany(Device::class);
     }
 
+    public function cluster()
+    {
+        return $this->belongsTo(Cluster::class);
+    }
+
     public function users()
     {
         return $this->belongsToMany(User::class);

@@ -27,31 +27,167 @@ Open http://127.0.0.1:8002/login. Port 8002 matches the registered local Rose ac
 
 The existing local server may be started with artisan serve. The explicit PHP command above ensures the image upload limits match the application. The public/.user.ini file provides the same limits for PHP-FPM; configure equivalent PHP settings for other servers.
 
-## Starter seeders
+## Monitoring roster seeders
 
-Run these after the normal migrations, from `web/`:
+The October 2026 monitoring workbook supplies **10 clusters and 112 branches**.
+Each workbook branch receives **one IP Camera** monitoring entry. The portable
+roster is committed in `database/seeders/data/october-2026-monitoring.json`; the
+original Excel file is not required when deploying or rerunning these seeders.
+Names and cluster membership preserve branch rows 9-120 of `Sheet1 (2)`; summary
+rows, notes, daily status values and offline-day calculations are excluded.
 
-```sh
-php artisan db:seed
-```
-
-- `UserSeeder` creates Rynhart (`rynhart@rosebakeshop.net`) and Elbert (`elbert@rosebakeshop.net`) as active administrators with access to all branches. Both initial passwords are `password`, stored as hashes by the User model.
-- `LocationSeeder` uses the existing branches table and adds the mockup locations: Makati Central, Quezon City, Cebu IT Park and Davao Downtown. Addresses are left blank.
-- `DeviceSeeder` adds one 8-channel NVR and two IP cameras (Main Entrance and Cashier Area) per starter branch. These are sample inventory records; network and manufacturer details are left blank. Status starts as `unknown`, without daily observations or outages. Cameras connect to their recorder unless an existing asset or occupied channel prevents that connection.
-
-The seeders only add missing records. Reruns preserve existing passwords, roles, activation, branch details and device settings. Locations match by code or name, users by email and devices by asset ID. Seeding does not clear tables or recreate the database. Change the initial passwords through User management after signing in.
-
-You can also run them individually:
+After applying the additive cluster migration, seed monitoring inventory only:
 
 ```sh
-php artisan db:seed --class=UserSeeder
-php artisan db:seed --class=LocationSeeder
-php artisan db:seed --class=DeviceSeeder
+php artisan db:seed --class=MonitoringSeeder
 ```
 
-`DeviceSeeder` ensures its starter locations exist when run alone. The seeder tests use only guarded SQLite `:memory:` and do not use `RefreshDatabase`.
+This command calls `DeviceSeeder`, which includes `LocationSeeder` and
+`ClusterSeeder` in a transaction. It does not run `UserSeeder` or change accounts.
+A fresh database gets 112 branches, 112 IP cameras and 10 clusters. No recorder
+or additional per-location cameras are generated. Existing unrelated branches,
+recorders, cameras and history remain in place.
+
+- Cluster and branch matching uses code or a case-insensitive trimmed name.
+  Existing names, codes, addresses and activation flags are preserved. Missing
+  cluster assignments are filled; a different existing assignment is preserved
+  with a console warning.
+- A workbook branch's existing IP camera is reused without changing its name,
+  asset ID, status, network details, notes or history. If it already has multiple
+  IP cameras, all are preserved and no additional camera is created.
+- Newly created cameras have application asset IDs such as `CAM-AGDAO-1-001`,
+  type `IP Camera` and status `unknown`. IP addresses, manufacturer, model, serial,
+  channel and recorder details remain blank until verified. These asset IDs are
+  generated application identifiers, not imported hardware serial numbers.
+- The seed does not create historical observations or outages, or mark cameras
+  checked. Old workbook statuses do not become current live status.
+- Ambiguous existing branch/cluster identities or occupied generated asset IDs
+  stop and roll back the inventory seed. No existing device is reassigned.
+
+Clusters appear on the Branch dashboard and in the branch editor. Administrators
+can change assignments there; other users receive cluster data only for branches
+they can access. Cluster names can also be used in Branch dashboard search.
+
+`php artisan db:seed` runs `UserSeeder` followed by `MonitoringSeeder`. UserSeeder
+adds missing Rynhart/Elbert starter administrator accounts with initial password
+`password`, hashed by the User model; reruns preserve existing
+passwords, roles, activation and employee codes. For an existing installation,
+use the monitoring-only command above when adding the workbook inventory.
+
+`SeedersTest` uses guarded SQLite `:memory:` without `RefreshDatabase`, and covers
+roster counts, one camera per branch on a fresh database, safe reruns, reuse,
+conflict rollback, cluster assignment validation and branch-scoped cluster access.
+
+## October 2026 history import
+
+The reviewed workbook history is a separate snapshot in
+`database/seeders/data/october-2026-history.json`, including source cells and the
+workbook SHA-256. The inventory seeder above remains inventory-only. After the
+observation import metadata migration, preview and import the dated records:
+
+```sh
+php artisan rosewatch:import-october-2026 --dry-run --initialize-status
+php artisan rosewatch:import-october-2026 --initialize-status
+```
+
+This is an explicit server-side historical import, not a public backdating API.
+Normal daily actions still allow only today in Philippine time. The import uses
+one IP camera per workbook branch, rejects missing/ambiguous mappings, runs in a
+transaction and preserves every existing device/date record, including evidence
+and ticket links. Reruns skip already saved records. Blank cells are omitted and
+future dated entries are skipped. The source has 2,909 nonblank cells through
+October 26: 2,014 ON, 472 OFF and 423 DAYOFF entries.
+
+ON/OFF become online/offline observations. DAYOFF, HOLIDAY, NO DEVICE and ALERT
+are report markers, not confirmed camera connectivity. Imported records retain
+the source filename/cell and date; no operator or exact check time is invented.
+Date-only imported ON/OFF records count as reported checks, while day-off/holiday
+markers do not count as completed checks. Device history, charts, readonly dialogs
+and exports display the imported values.
+
+`--initialize-status` initializes only an unknown camera without an observed status
+timestamp or manual checks. It uses the latest eligible ON/OFF entry, stores its
+`status_reported_on` date and leaves `status_observed_at` empty. Current checks and
+existing known states are preserved. A later real check replaces import provenance
+for that day's observation and records its actual operator/time. Importing does
+not fabricate outage intervals, incidents, tickets or exact downtime. Opening
+offline-day carry-over and worksheet-reported offline-day values remain in the
+source snapshot; they are not interpreted as measured outage durations.
+
+The Cameras register shows all days of the selected month, disabling future cells.
+Its daily summary rows at the bottom of the table count online, offline, no device, day off/holiday, total
+recorded and unrecorded cameras within the current filters. Total recorded includes
+report markers, so day-off entries reconcile with the totals. Values are computed
+from saved records instead of copied spreadsheet summary/formula cells. Existing
+manual checks can therefore make app totals differ from the original worksheet.
+
+When clusters are available, Cameras defaults to assigned clusters. Use its cluster
+filter to select a single cluster, All clusters, or unassigned branches; existing
+unassigned/sample cameras remain available. Summary totals follow the displayed
+cameras.
+
+`OctoberMonitoringImportTest` uses guarded SQLite `:memory:` to verify source totals,
+safe reruns, future-date limits, manual-record preservation, report markers, status
+initialization, readonly history and exports. `node tmp/verify-october.cjs` checks
+the compiled calendar and exact daily counts with browser-only fixture data,
+including corrected Sunday totals, cluster filtering and responsive layout.
+
+## Workspace cluster filters
+
+Cluster filters are available on Overview, Cameras, Today's checklist, Screenshot
+history, Outage tracking, Branch dashboard, Incidents, Tickets, Reminders, Device
+management, Reports and User management. They sit in the existing filter bars.
+Other pages start with All clusters; Cameras retains its assigned-cluster default.
+
+- Choose a cluster, Assigned clusters, or Unassigned branches. All clusters includes
+  branches without a cluster assignment.
+- Branch choices follow the selected cluster. Changing to an incompatible cluster
+  resets the branch choice and clears checklist bulk selections.
+- Records and summary counts follow the selected cluster and branch, alongside the
+  page's existing search and status filters. Date/month navigation preserves the
+  cluster and branch selection.
+- Reports apply the same cluster and branch scope to both CSV and HTML downloads.
+  Export requests validate cluster IDs and intersect the selection with the signed-in
+  user's authorized branches; the filter never grants additional access.
+- User management filters accounts by branch access. Administrators and all-branch
+  accounts appear in every matching cluster. Its audit list follows the selected
+  branches, including account events for matching users; global system events appear
+  in the unfiltered view.
+
+`ClusterReportFilterTest` checks export scopes, mismatched selections and branch
+authorization using guarded SQLite `:memory:`. `node tmp/verify-clusters.cjs` checks
+all 12 compiled workspace pages, cascading branch choices, checklist selections,
+account/audit scoping, report links, date navigation and responsive layouts using
+browser-only fixtures with backend writes blocked.
 
 ## First-use flow
+
+On **Cameras**, use **Jump to today** to bring today's column into view. Use
+the single checkbox beside each camera: **checked = Online, unchecked = Offline**.
+Toggling it saves that day's status immediately,
+without opening a dialog. The selected checkbox shows a checkmark after server
+confirmation; saving and errors appear per camera. **Details** opens the existing
+daily action dialog for notes, screenshots and ticket creation.
+
+Quick marking is a status-only action: it preserves notes, evidence and ticket
+requests and never dispatches a ticket job. It records the actual checker/time,
+updates the current device status and follows the usual outage start/restoration
+rules. A real check replaces imported status markers for today. Past/future dates
+and read-only users have no quick controls; the backend independently enforces the
+current Philippine date, role, branch and camera-type checks.
+
+`POST /observations/quick-status` returns only the updated device state, safe
+observation/evidence/ticket metadata and that device's outages. Vue updates the
+Inertia props locally, so cell colors and summary totals change without reloading
+the monthly dataset or resetting table scroll. A camera's checkbox is disabled
+while saving; other cameras can be checked concurrently. Existing status filters
+can remove a newly marked camera from the current view.
+
+`QuickStatusTest` uses guarded SQLite `:memory:` and fake storage/queues to verify
+permissions, dates, preservation, outage behavior, provenance and rollback.
+`node tmp/verify-quick-status.cjs` checks the compiled UI with intercepted fixture
+POSTs, including concurrent saves, totals, scroll, keyboard controls, errors, details
+and mobile sizing. It does not write live application data.
 
 1. Create the first administrator using the interactive command and sign in.
 2. Add a branch from Branch dashboard, then register recorders, cameras and other equipment in Device management.
@@ -110,23 +246,192 @@ Main services: AccessService, AdministrationService, DeviceService, ObservationS
 
 ## External ticket integration
 
-Leave TICKET_ENDPOINT and TICKET_TOKEN blank until a provider is chosen. With no endpoint, selected requests are saved as unavailable; observations and evidence still save successfully. The UI never reports a ticket as created without provider confirmation.
+RoseWatch connects to the [IT Support Hub ticket API documentation](https://api.rosebakeshop.net/?urls.primaryName=IT+Support+Hub+%E2%80%94+Tickets).
+Only `POST /api/ticket` (create) and `GET /api/ticket` (view) are implemented.
+No remote status changes, assignments, edits, comments or deletion actions are exposed.
+Documentation Basic authentication is separate from runtime API bearer authentication;
+only the API bearer token belongs in the app's ignored `.env`.
 
-Configure an HTTPS endpoint in TICKET_ENDPOINT and its server-side bearer token in TICKET_TOKEN. The HttpTicketProvider sends POST JSON with an Idempotency-Key header. Payload fields: camera_id, camera_name, branch, date, status, notes, title, requested_by and screenshots (array of name, mime and base64 data). The provider must return {"id":"EXTERNAL-123","url":"https://provider/tickets/123"} and honor the idempotency key for retries. Credentials never reach Vue.
-
-Start a queue worker after configuration:
-
-```sh
-php artisan queue:work --tries=3 --timeout=60
+```dotenv
+TICKET_ENDPOINT=https://itsupporthub.rosebakeshop.net/api/ticket
+TICKET_TOKEN=<server-side bearer token>
+TICKET_DEPARTMENT_ID=1
+TICKET_CATEGORY_ID=33
+TICKET_ASSIGNEE_ID=6
+TICKET_BOARD_ID=10
 ```
 
-The request snapshot and key persist before dispatch after the database transaction commits. The job tracks queued/processing/created/failed; retry preserves the key. A timeout may occur after external creation, so provider idempotency is required. External success cannot be rolled back by a later local failure. Endpoint setup and provider behavior are not represented as already connected.
+The creation dialog offers board **10 ? CCTV Reports/Concerns** (default) and board
+**9 ? CCTV Footage/Defiance Daily Reporting**. Allowed boards are configured in
+`config/tickets.php` and validated server-side. An existing request retains its original
+board and content snapshot. Department/category/assignee defaults stay on the server.
+Without complete configuration, daily records still save and ticket requests remain
+unavailable; the UI never claims creation before a valid provider confirmation.
+
+The requester name/email come from the signed-in RoseWatch user. Support Hub may create
+its own requester account when that email is unknown, as described by its API.
+Creation sends subject, camera/branch/date/status/notes, department/category, assignee,
+selected board, medium priority and request ticket type. `source_app=RoseWatch` and a
+stable `external_reference` correlate the request. Saved screenshots are sent as binary
+`attachments[]` multipart parts, preserving their stored MIME and generated filenames;
+requests without files use JSON. Private evidence URLs, credentials and base64 image
+payloads are not sent. The job rechecks requester access and attachment ownership before
+sending. A confirmation must be HTTP 201 with `success=true`, a nested ticket identifier
+and an HTTPS ticket URL on the configured provider origin.
+
+Start or restart the queue worker after deployment/configuration changes:
+
+```sh
+php artisan queue:work --queue=tickets --tries=1 --timeout=60
+```
+
+The request snapshot and correlation key persist before dispatch after the transaction
+commits. Jobs use a dedicated `tickets` queue. **The API does not guarantee idempotency.** Each queued request is sent once:
+there are no HTTP retries or automatic POST retries by the job. Confirmed creation is
+stored as `created`; known rejection/unsent failure becomes `failed` and can be explicitly
+retried for today's record after correction. Timeouts, server errors, redirects,
+malformed confirmations and interrupted processing become `unconfirmed`. These cannot be
+requeued through retry endpoints or by saving daily actions again. Check Support Hub
+using the request reference before any further action; an uncertain ticket may already
+exist. Stale processing jobs are not reclaimed for another POST. Existing historical
+records remain read-only. Files missing before sending fail without a remote POST.
+
+On **Tickets**, choose **Load live tickets** to read current provider statuses, priorities,
+board, assignees and descriptions; the local request state remains separate. The
+server uses `assigned_id=6`, with explicit provider-page navigation (50 items per page).
+API pagination URLs are ignored. Only confirmed tickets matching both the ID and URL of
+local requests in the selected month and the current user's authorized branches are
+returned to Vue. Other apps' tickets and inaccessible branches are excluded. Existing
+cluster/branch/search filters also narrow the live panel. Provider pages can contain no
+matching local tickets; tickets reassigned away from the configured assignee will be
+absent. The API does not list attachments/checklists in GET responses. Use the confirmed
+external link to view the complete ticket in Support Hub.
+
+`GET /tickets/external` is authenticated, validated, rate limited and private/no-store;
+callers cannot override the assigned-user ID. Token values, raw API errors and raw
+provider payloads never appear in page props or logs. Redirects are disabled so bearer
+credentials are not forwarded to another origin. Creation failures use safe messages
+without chaining raw HTTP exceptions into failed-job storage.
+
+`TicketIntegrationTest` and the affected operations tests use synthetic HTTP responses,
+private fake storage and guarded SQLite `:memory:`. PHPUnit forces ticket credentials
+blank and the shared test base blocks stray Laravel HTTP calls. Tests cover the exact
+JSON/multipart contract, board validation, combined saves, single-send behavior,
+uncertain outcomes, explicit retries, pagination, branch scoping and credential redaction.
+No production POST is needed for verification. A read-only live GET verified the route,
+authentication and response contract for the configured assignee.
 
 ## Storage and deployment
 
 Use web/public as the only document root. Evidence stays in storage/app/private on Laravel's local disk, automatic local URL serving is disabled, and no public/storage symlink is needed. Files are streamed by authenticated routes after checking branch access, with private/no-store and nosniff headers. PDF previews are sandboxed. Generated filenames are UUIDs; MySQL stores metadata and ownership. Signed-document URLs are references only; this app does not fetch them, verify signatures or change document sharing.
 
 Use HTTPS, APP_DEBUG=false, SESSION_SECURE_COOKIE=true and a configured APP_URL for deployment. Sessions are encrypted and stored locally. Set file-system permissions so only the app account can read evidence, sessions, logs and .env. Back up MySQL and private files together. A single local storage volume is required while running on one server; migrate the disk through Laravel's storage abstraction before scaling across servers. Large inventories or reports may need pagination/queued generation in a later scale-up.
+
+## Manual database and attachment backups
+
+Administrators can open **Management > Manual backup** (`/backups`):
+
+1. Choose **Download SQL** and **Download attachments ZIP** to save both backup files.
+2. Choose **Open Drive folder** to open the configured destination in a new tab.
+3. In Google Drive, choose **New > File upload** and upload both downloaded files.
+   Keep the SQL and ZIP together in the same dated backup folder.
+
+The attachment button shows **Preparing ZIP…** while the export is requested. Once
+the ZIP response arrives, the browser download is triggered explicitly and a
+**Save ZIP file** link remains available if automatic downloading is blocked.
+Missing files, expired sessions, access failures and rate limits appear inline;
+HTML/sign-in responses are rejected rather than saved as broken ZIP files. AJAX
+preparation failures return a safe JSON message; ordinary POSTs retain their
+redirect-and-flash behavior. Refresh the page after deploying frontend changes.
+
+This is a manual workflow. There is no Google API connection, automatic upload,
+scheduled backup, or in-app restore. RoseWatch records when an export was prepared;
+the recent-export list cannot confirm browser download completion or a Drive upload.
+SQL includes all branches and user records. ZIP includes all registered screenshots
+and uploaded incident files on the local evidence disk. Both exclude private
+environment settings and unrelated filesystem data. Restrict access to the files
+and their Drive folder. External signed-document URLs remain SQL references; their
+remote documents are not fetched or included in the ZIP.
+
+The ZIP includes `manifest.json` with attachment IDs, ownership references, original
+local paths, archive paths, sizes and SHA-256 checksums, plus `README.txt` with recovery
+instructions. Original filenames are metadata only; archive entries use the generated
+evidence paths. Duplicate file references share a ZIP entry. Unregistered/orphan files
+are excluded. An empty attachment library produces a valid manifest-only backup with
+instructions. Missing, unreadable or size-mismatched registered files abort the whole
+ZIP instead of producing an incomplete download. Unsupported disks, traversal paths
+and symlinked evidence paths are rejected.
+
+For recovery, restore the SQL separately, then copy `attachments/local/evidence/`
+from the ZIP into the app's private `evidence/` directory, preserving generated
+filenames and the existing local disk configuration. Verify files against manifest
+checksums. There is no in-app restore. SQL and ZIP are separate snapshots: download
+them close together and avoid uploads/deletions while preparing the pair.
+
+Configure these server-side values in the ignored `.env`:
+
+```dotenv
+BACKUP_MYSQL_DUMP_BINARY=mysqldump
+BACKUP_GOOGLE_DRIVE_FOLDER_ID=<the folder ID from the Drive URL>
+```
+
+Use a server-compatible MySQL/MariaDB dump executable. On Windows, set the absolute
+path, for example `"C:/xampp/mysql/bin/mysqldump.exe"`. Run `php artisan config:clear`
+after changes. The local workspace's utility and requested folder are configured.
+The `/u/8/` segment in a Drive URL is an account selector, not part of the folder ID;
+the app uses a canonical folder link. Sign in to a Google account with folder access.
+
+Exports use a transaction snapshot for InnoDB tables, quick streaming and binary-safe
+data output without locking application tables. Avoid schema changes during export.
+Nontransactional tables need a separate consistency plan. Table schema/data and
+default trigger output are included; routines, events, server users and privileges
+are not exported. No database migration or reseeding is needed for this feature.
+
+Attachment ZIP creation requires PHP's ZIP extension (`ZipArchive`) and a local
+evidence disk. Availability is shown separately from SQL export, so one can remain
+available when the other is not. The page displays registered attachment count and
+uncompressed bytes. ZIP entries read files from disk without loading the entire
+archive into PHP memory; metadata is processed in chunks. Allow temporary disk space
+for the archive. The browser receives the ZIP as a Blob before starting its save;
+the Blob URL is released on the next export or when leaving the page. Very large
+libraries may require queued or offline exports.
+
+The dump subprocess explicitly receives a small OS-variable allowlist, including
+Windows `SystemRoot`, so exports also work through `php artisan serve` when the
+web SAPI filters the inherited process environment. SQL failures log only the
+exception class and available numeric exit/MySQL/socket error codes, never raw
+native errors or connection values.
+
+The authenticated, CSRF-protected POST routes (`/backups/download` and
+`/backups/attachments/download`) are admin-only, rate limited to two requests per
+minute, and each export type is guarded against overlapping preparation. SQL and connection option
+files are temporary private files; credentials never appear in command arguments,
+browser props or logs. Option files are deleted after dumping, SQL is deleted after
+sending, and shutdown cleanup covers ordinary failed/aborted requests. Force-killing
+PHP can bypass shutdown cleanup; keep storage restricted to the app account and
+remove abandoned `export-*.sql`/`credentials-*.cnf` files only when no export is active.
+On Windows, enforce the storage restriction with NTFS permissions; Unix modes alone
+do not establish a Windows ACL. Error responses never include raw process output.
+ZIP and manifest temporary files use `storage/app/private/attachment-backups`,
+restrictive Unix modes and the same download/shutdown cleanup policy. Remove abandoned
+`attachments-*.zip`/`manifest-*.json` only when no attachment backup is active. ZIP
+failures log the exception class only. Audit/history entries for SQL and ZIP contain
+filenames, byte counts and export type; ZIP audits also record attachment/file counts.
+File contents, server paths and manifest details are not exposed in page props or logs.
+
+`ManualBackupTest` uses fake processes and guarded SQLite `:memory:` only; no native
+dump is run by tests. It covers access, SQL command construction, private-file cleanup,
+locks, rate limits, audit metadata, safe errors and download headers.
+`AttachmentBackupTest` exercises actual ZIP generation
+with synthetic files and guarded SQLite `:memory:`, including all-branch evidence,
+manifest/checksum recovery data, empty libraries, missing/changed files, invalid paths,
+access control, safe errors and cleanup. No live database or private evidence is used.
+Browser review for both export types is available with `node tmp/verify-backups.cjs`
+from the repository root and the local
+asset server on port 8002. It verifies that Chrome actually saves a synthetic ZIP
+with matching bytes, plus progress, the fallback save link, invalid responses and
+visible errors. ZIP requests are intercepted with fixture responses; other write
+requests are blocked, so no live export or Drive upload occurs.
 
 ## Frontend formatting
 
@@ -149,4 +454,4 @@ npm run build
 
 The 33 backend tests force isolated in-memory SQLite and refuse persistent databases before RefreshDatabase runs. Separate test cache paths ignore live configuration/route caches. Migrations have also been applied to the local MySQL database. Tests cover authentication, branch/role access, private files, bulk rollback, upload validation, outages, incident lifecycle, admin protection, reports, reminders and ticket confirmation/retries with a fake provider.
 
-Browser UI review uses synthetic page props, not a privileged backend account. With the local server on port 8127, run node tmp/verify-workspace.cjs from the repository root. It exercises the compiled pages, matrix action dialog, device accordions, incident resolution form and responsive navigation. Login browser checks remain at tmp/verify-login.cjs. Real external ticket delivery is deferred until a provider is configured.
+Browser UI review uses synthetic page props, not a privileged backend account. With the local server on port 8002, run node tmp/verify-workspace.cjs from the repository root. It exercises the compiled pages, matrix action dialog, device accordions, incident resolution form and responsive navigation. Login browser checks remain at tmp/verify-login.cjs. Real external ticket delivery is deferred until a provider is configured.

@@ -5,6 +5,7 @@ import type { Device, Observation } from '../types';
 import AppModal from './AppModal.vue';
 import FormErrors from './FormErrors.vue';
 import StatusBadge from './StatusBadge.vue';
+import { observationStatus } from '../observation-status';
 
 const props = defineProps<{
     open: boolean;
@@ -14,6 +15,8 @@ const props = defineProps<{
     record: Observation | null;
     canWrite: boolean;
     ticketConfigured: boolean;
+    ticketBoards?: { id: number; name: string }[];
+    ticketDefaultBoard?: number | null;
 }>();
 
 const emit = defineEmits<{ close: [] }>();
@@ -27,6 +30,7 @@ const form = useForm({
     status: 'online',
     notes: '',
     ticket_title: '',
+    ticket_board_id: null as number | null,
     images: [] as File[],
     remove_attachment_ids: [] as number[],
 });
@@ -68,6 +72,7 @@ watch(
             : 'online';
         form.notes = props.record?.notes || '';
         form.ticket_title = `${props.devices[0]?.name || 'Camera'} - support request`;
+        form.ticket_board_id = props.ticketDefaultBoard || props.ticketBoards?.[0]?.id || null;
         if (bulk.value && editable.value) form.update_status = true;
     },
 );
@@ -321,9 +326,13 @@ const hasActions = computed(() => form.update_status || form.attach_images || fo
                             rel="noopener noreferrer"
                             >Open external ticket {{ record.ticket.external_id }}</a
                         >
+                        <p v-else-if="record.ticket.status === 'unconfirmed'">
+                            A ticket may already exist. Check Support Hub before any new attempt.
+                            Saving this record will not send the ticket again.
+                        </p>
                         <p v-else>
-                            Saving will retry this request if it is not already queued or
-                            processing.
+                            Only rejected or unsent requests can be retried. Queued requests are
+                            sent once; an uncertain result requires checking Support Hub.
                         </p></template
                     ><label
                         >Ticket title<input
@@ -331,10 +340,22 @@ const hasActions = computed(() => form.update_status || form.attach_images || fo
                             maxlength="180"
                             required
                     /></label>
+                    <label v-if="ticketBoards?.length && !record?.ticket">
+                        Ticket board
+                        <select v-model="form.ticket_board_id">
+                            <option
+                                v-for="board in ticketBoards"
+                                :key="board.id"
+                                :value="board.id"
+                            >
+                                {{ board.name }}
+                            </option>
+                        </select>
+                    </label>
                     <p class="rw-note">
                         {{
                             ticketConfigured
-                                ? 'Creation is handled by the external provider in the background. The ticket indicator appears after confirmation.'
+                                ? 'Send this request and its saved screenshots to IT Support Hub. Creation runs in the background and is confirmed here. Ticket updates are managed in Support Hub.'
                                 : 'The ticket provider is not connected yet. Your record and request will be saved; a ticket will not be reported as created.'
                         }}
                     </p>
@@ -350,7 +371,14 @@ const hasActions = computed(() => form.update_status || form.attach_images || fo
             </fieldset>
             <section v-if="(!editable || !hasActions) && record">
                 <h3>Saved daily record</h3>
-                <StatusBadge :status="record.status" />
+                <StatusBadge :status="observationStatus(record)" />
+                <p
+                    v-if="record.import_source"
+                    class="rw-note"
+                >
+                    Source: {{ record.import_source }} · {{ record.import_reference }}. The
+                    worksheet supplies the date, without a check time or operator.
+                </p>
                 <p>{{ record.notes || 'No notes.' }}</p>
                 <div v-if="record.ticket">
                     <StatusBadge :status="record.ticket.status" />

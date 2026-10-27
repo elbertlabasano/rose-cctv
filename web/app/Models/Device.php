@@ -10,7 +10,7 @@ class Device extends Model
 
     protected function casts(): array
     {
-        return ['status_observed_at' => 'immutable_datetime', 'installed_at' => 'date:Y-m-d', 'warranty_at' => 'date:Y-m-d', 'storage_tb' => 'float', 'channel' => 'integer', 'channels' => 'integer'];
+        return ['status_observed_at' => 'immutable_datetime', 'status_reported_on' => 'date:Y-m-d', 'installed_at' => 'date:Y-m-d', 'warranty_at' => 'date:Y-m-d', 'storage_tb' => 'float', 'channel' => 'integer', 'channels' => 'integer'];
     }
 
     public function branch()

@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Http;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -10,6 +11,7 @@ abstract class TestCase extends BaseTestCase
     {
         $app = parent::createApplication();
         $this->assertSafeTestDatabase($app);
+        Http::preventStrayRequests();
 
         return $app;
     }

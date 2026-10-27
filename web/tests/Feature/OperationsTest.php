@@ -12,10 +12,14 @@ use App\Models\Observation;
 use App\Models\Outage;
 use App\Models\TicketRequest;
 use App\Models\User;
+use App\Services\ObservationService;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -136,10 +140,11 @@ class OperationsTest extends TestCase
         $this->assertDatabaseCount('incident_reports', 0);
     }
 
-    public function test_ticket_job_uses_provider_and_stable_idempotency_without_duplicate_creation(): void
+    public function test_ticket_job_uses_provider_and_stable_reference_without_duplicate_creation(): void
     {
         Queue::fake();
-        config(['tickets.endpoint' => 'https://provider.example/tickets']);
+        config(['tickets.endpoint' => 'https://provider.example/tickets', 'tickets.token' => 'synthetic-test-token',
+            'tickets.department_id' => 1, 'tickets.category_id' => 33, 'tickets.assignee_id' => 6]);
         $this->post('/observations', $this->observation(['create_ticket' => true, 'ticket_title' => 'Support']))->assertSessionHasNoErrors();
         Queue::assertPushed(CreateExternalTicket::class);
         $ticket = TicketRequest::first();
@@ -155,8 +160,11 @@ class OperationsTest extends TestCase
         $this->assertSame($key, $ticket->fresh()->idempotency_key);
     }
 
-    public function test_external_failure_preserves_request_for_retry(): void
+    public function test_uncertain_external_failure_preserves_request_without_automatic_retry(): void
     {
+        Queue::fake();
+        config(['tickets.endpoint' => 'https://provider.example/tickets', 'tickets.token' => 'synthetic-test-token',
+            'tickets.department_id' => 1, 'tickets.category_id' => 33, 'tickets.assignee_id' => 6]);
         $this->post('/observations', $this->observation(['create_ticket' => true, 'ticket_title' => 'Support']));
         $ticket = TicketRequest::first();
         $provider = \Mockery::mock(TicketProvider::class);
@@ -165,9 +173,9 @@ class OperationsTest extends TestCase
             (new CreateExternalTicket($ticket->id))->handle($provider);
             $this->fail('Should throw');
         } catch (\RuntimeException $error) {
-            $this->assertSame('Provider down', $error->getMessage());
+            $this->assertStringContainsString('A ticket may already exist', $error->getMessage());
         }
-        $this->assertSame('failed', $ticket->fresh()->status);
+        $this->assertSame('unconfirmed', $ticket->fresh()->status);
         $this->assertNull($ticket->fresh()->external_url);
         $this->assertDatabaseCount('observations', 1);
     }
@@ -246,7 +254,7 @@ class OperationsTest extends TestCase
         $this->assertDatabaseHas('followups', ['user_id' => $this->admin->id, 'subject_id' => $this->camera->id]);
         $foreign = $this->device(['branch_id' => $this->other->id]);
         $this->actingAs($this->operator());
-        $this->post('/followups',['subject_type' => 'device', 'subject_id' => $foreign->id, 'snoozed_until' => now()->addDay()->toDateString()])->assertForbidden();
+        $this->post('/followups', ['subject_type' => 'device', 'subject_id' => $foreign->id, 'snoozed_until' => now()->addDay()->toDateString()])->assertForbidden();
     }
 
     public function test_invalid_upload_and_future_observation_do_not_create_records(): void
@@ -257,11 +265,13 @@ class OperationsTest extends TestCase
         $this->assertDatabaseCount('attachments', 0);
         $this->assertSame([], Storage::disk('local')->allFiles());
     }
+
     public function test_document_urls_with_embedded_credentials_are_rejected(): void
     {
         $this->post('/incidents', ['device_id' => $this->camera->id, 'title' => 'Issue', 'priority' => 'low', 'category' => 'Other', 'signed_document_url' => 'https://user:secret@docs.example/report.pdf'])->assertSessionHasErrors('signed_document_url');
         $this->assertDatabaseCount('incident_reports', 0);
     }
+
     public function test_rejected_attachment_removal_rolls_back_the_record(): void
     {
         $this->post('/observations', $this->observation(['attach_images' => true, 'images' => [UploadedFile::fake()->image('one.png')], 'remove_attachment_ids' => [999999]]))->assertSessionHasErrors('observation');
@@ -271,39 +281,51 @@ class OperationsTest extends TestCase
 
     public function test_all_past_daily_actions_and_ticket_retries_preserve_existing_data(): void
     {
-        $yesterday=now()->subDay()->toDateString();
-        $record=Observation::create(['device_id'=>$this->camera->id,'date'=>$yesterday,'status'=>'online','notes'=>'Original historical record','checked_at'=>now()->subDay(),'checked_by'=>$this->admin->id]);
-        Storage::disk('local')->put('evidence/history.jpg','original');
-        $file=Attachment::create(['branch_id'=>$this->branch->id,'observation_id'=>$record->id,'uploaded_by'=>$this->admin->id,'disk'=>'local','path'=>'evidence/history.jpg','name'=>'history.jpg','mime'=>'image/jpeg','size'=>8]);
-        $ticket=TicketRequest::create(['observation_id'=>$record->id,'requested_by'=>$this->admin->id,'idempotency_key'=>(string)\Illuminate\Support\Str::uuid(),'title'=>'Existing request','status'=>'unavailable']);
+        $yesterday = now()->subDay()->toDateString();
+        $record = Observation::create(['device_id' => $this->camera->id, 'date' => $yesterday, 'status' => 'online', 'notes' => 'Original historical record', 'checked_at' => now()->subDay(), 'checked_by' => $this->admin->id]);
+        Storage::disk('local')->put('evidence/history.jpg', 'original');
+        $file = Attachment::create(['branch_id' => $this->branch->id, 'observation_id' => $record->id, 'uploaded_by' => $this->admin->id, 'disk' => 'local', 'path' => 'evidence/history.jpg', 'name' => 'history.jpg', 'mime' => 'image/jpeg', 'size' => 8]);
+        $ticket = TicketRequest::create(['observation_id' => $record->id, 'requested_by' => $this->admin->id, 'idempotency_key' => (string) Str::uuid(), 'title' => 'Existing request', 'status' => 'unavailable']);
         foreach ([
-            ['update_status'=>true],
-            ['update_status'=>false,'attach_images'=>true,'images'=>[UploadedFile::fake()->image('new.jpg')]],
-            ['update_status'=>false,'attach_images'=>true,'remove_attachment_ids'=>[$file->id]],
-            ['update_status'=>false,'create_ticket'=>true,'ticket_title'=>'New request'],
-        ] as $action) $this->post('/observations',$this->observation([...$action,'date'=>$yesterday]))->assertSessionHasErrors('date');
-        $other=$this->device();
-        $this->post('/observations',$this->observation(['device_ids'=>[$this->camera->id,$other->id],'date'=>$yesterday]))->assertSessionHasErrors('date');
-        config(['tickets.endpoint'=>'https://provider.example/tickets']); Queue::fake();
-        $this->post('/tickets/'.$ticket->id.'/retry')->assertSessionHas('error','Past daily records are read-only. Ticket creation can only be triggered for today.');
+            ['update_status' => true],
+            ['update_status' => false, 'attach_images' => true, 'images' => [UploadedFile::fake()->image('new.jpg')]],
+            ['update_status' => false, 'attach_images' => true, 'remove_attachment_ids' => [$file->id]],
+            ['update_status' => false, 'create_ticket' => true, 'ticket_title' => 'New request'],
+        ] as $action) {
+            $this->post('/observations', $this->observation([...$action, 'date' => $yesterday]))->assertSessionHasErrors('date');
+        }
+        $other = $this->device();
+        $this->post('/observations', $this->observation(['device_ids' => [$this->camera->id, $other->id], 'date' => $yesterday]))->assertSessionHasErrors('date');
+        config(['tickets.endpoint' => 'https://provider.example/tickets']);
+        Queue::fake();
+        $this->post('/tickets/'.$ticket->id.'/retry')->assertSessionHas('error', 'Past daily records are read-only. Ticket creation can only be triggered for today.');
         Queue::assertNothingPushed();
-        $this->assertSame('Original historical record',$record->fresh()->notes);
-        $this->assertSame('online',$record->fresh()->status);
-        $this->assertDatabaseCount('observations',1);$this->assertDatabaseCount('attachments',1);$this->assertDatabaseCount('ticket_requests',1);
-        $this->assertSame('unavailable',$ticket->fresh()->status);Storage::disk('local')->assertExists($file->path);
+        $this->assertSame('Original historical record', $record->fresh()->notes);
+        $this->assertSame('online', $record->fresh()->status);
+        $this->assertDatabaseCount('observations', 1);
+        $this->assertDatabaseCount('attachments', 1);
+        $this->assertDatabaseCount('ticket_requests', 1);
+        $this->assertSame('unavailable', $ticket->fresh()->status);
+        Storage::disk('local')->assertExists($file->path);
         $this->get('/attachments/'.$file->id)->assertOk();
     }
+
     public function test_daily_write_uses_philippine_date_after_midnight(): void
     {
-        $this->travelTo(\Carbon\CarbonImmutable::parse('2026-10-26 00:01:00','Asia/Manila'));
-        $this->post('/observations',$this->observation(['date'=>'2026-10-25']))->assertSessionHasErrors('date');
-        $this->post('/observations',$this->observation(['date'=>'2026-10-26']))->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('observations',['date'=>'2026-10-26']);
+        $this->travelTo(CarbonImmutable::parse('2026-10-26 00:01:00', 'Asia/Manila'));
+        $this->post('/observations', $this->observation(['date' => '2026-10-25']))->assertSessionHasErrors('date');
+        $this->post('/observations', $this->observation(['date' => '2026-10-26']))->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('observations', ['date' => '2026-10-26']);
     }
+
     public function test_service_rejects_past_date_without_form_request(): void
     {
-        try { app(\App\Services\ObservationService::class)->save($this->admin,$this->observation(['date'=>now()->subDay()->toDateString()])); $this->fail('Past actions should be blocked.'); }
-        catch (\Illuminate\Validation\ValidationException $error) { $this->assertArrayHasKey('date',$error->errors()); }
-        $this->assertDatabaseCount('observations',0);
+        try {
+            app(ObservationService::class)->save($this->admin, $this->observation(['date' => now()->subDay()->toDateString()]));
+            $this->fail('Past actions should be blocked.');
+        } catch (ValidationException $error) {
+            $this->assertArrayHasKey('date', $error->errors());
+        }
+        $this->assertDatabaseCount('observations', 0);
     }
 }
