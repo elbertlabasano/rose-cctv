@@ -2,6 +2,10 @@
 
 Laravel 12 + Inertia 2 + Vue 3 + TypeScript + Vite + Pinia, backed by MySQL. The root index.html remains the earlier interactive design reference. Live application data is server-side; the app does not use browser storage for business records.
 
+The public homepage at `/` introduces RoseWatch and links to sign-in or the current
+user's workspace. Camera and branch data remain behind authentication. See
+[Homepage](docs/homepage.md) for navigation, image assets and validation details.
+
 ## Run locally
 
 Requirements: PHP 8.2+ with PDO MySQL, GD, Fileinfo and the standard Laravel extensions; Composer; Node compatible with Vite 6; MySQL. Lockfiles are included.

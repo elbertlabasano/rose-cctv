@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { nextTick, ref, watch } from 'vue';
 
 defineProps<{ sso_enabled?: boolean; errors?: { sso?: string } }>();
@@ -45,17 +45,23 @@ function submit() {
                 class="auth-form-panel"
                 aria-labelledby="signin-title"
             >
-                <header class="auth-brand">
-                    <img
-                        src="/brand/rose-bakeshop-logo.png"
-                        alt="Rose Bakeshop"
-                        width="72"
-                        height="55"
-                    />
-                    <div>
-                        <span class="auth-brand-name">RoseWatch</span>
-                        <span class="auth-brand-caption">CCTV OPERATIONS</span>
-                    </div>
+                <header>
+                    <Link
+                        href="/"
+                        class="auth-brand"
+                        aria-label="RoseWatch home"
+                    >
+                        <img
+                            src="/brand/rose-bakeshop-logo.png"
+                            alt="Rose Bakeshop"
+                            width="72"
+                            height="55"
+                        />
+                        <div>
+                            <span class="auth-brand-name">RoseWatch</span>
+                            <span class="auth-brand-caption">CCTV OPERATIONS</span>
+                        </div>
+                    </Link>
                 </header>
 
                 <div class="auth-form-content">

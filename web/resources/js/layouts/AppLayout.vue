@@ -129,7 +129,11 @@ function toggleGroup(id: string) {
                     </svg>
                 </button>
             </div>
-            <div class="rw-brand">
+            <Link
+                href="/"
+                class="rw-brand"
+                aria-label="RoseWatch home"
+            >
                 <img
                     src="/brand/rose-bakeshop-logo.png"
                     alt="Rose Bakeshop"
@@ -140,7 +144,7 @@ function toggleGroup(id: string) {
                     <strong>RoseWatch</strong>
                     <small>CCTV OPERATIONS</small>
                 </div>
-            </div>
+            </Link>
             <DeviceSearch @navigate="navigation.open = false" />
             <nav aria-label="Main navigation">
                 <Link
