@@ -6,6 +6,10 @@ The public homepage at `/` introduces RoseWatch and links to sign-in or the curr
 user's workspace. Camera and branch data remain behind authentication. See
 [Homepage](docs/homepage.md) for navigation, image assets and validation details.
 
+For an issue-only daily report, open **Reports → Branch Issues Report**. Filter by
+date, cluster and branch, then download CSV or print/save PDF. See
+[Branch Issues Report](docs/branch-issues-report.md) for inclusion rules and dates.
+
 ## Run locally
 
 Requirements: PHP 8.2+ with PDO MySQL, GD, Fileinfo and the standard Laravel extensions; Composer; Node compatible with Vite 6; MySQL. Lockfiles are included.

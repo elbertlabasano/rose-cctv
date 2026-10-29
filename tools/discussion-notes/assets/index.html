@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#5b211e" />
+    <title>Discussion Notes</title>
+    <link rel="stylesheet" href="/app.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header class="page-heading">
+        <div>
+          <span class="eyebrow">CAPTURE THE CONVERSATION</span>
+          <h1>Discussion notes.</h1>
+          <p>Listen with your browser. Keep the words in your own text file.</p>
+        </div>
+        <span id="status" class="status" role="status">Connecting…</span>
+      </header>
+      <div class="file-bar">
+        <span>Saving to</span><code id="file-path">Loading…</code
+        ><span id="save-status" role="status">Checking file</span>
+      </div>
+      <section class="controls" aria-labelledby="capture-title">
+        <h2 id="capture-title">1. Capture the discussion</h2>
+        <div class="settings">
+          <label
+            >Spoken language<select id="language">
+              <option value="en-PH">English (Philippines)</option>
+              <option value="en-US">English (US)</option>
+              <option value="fil-PH">Filipino</option>
+              <option value="id-ID">Indonesian</option>
+            </select></label
+          ><label
+            >Speaker label <span class="optional">(optional, set by you)</span
+            ><input id="speaker" maxlength="80" placeholder="e.g. Maria"
+          /></label>
+        </div>
+        <div class="actions">
+          <button id="start" class="primary" type="button" disabled>
+            Start listening</button
+          ><button id="pause" type="button" disabled>Pause</button
+          ><span id="elapsed" class="elapsed" aria-label="Listening duration"
+            >00:00</span
+          >
+        </div>
+        <p class="privacy">
+          Your browser will ask for microphone access. Speech recognition may
+          send audio to its provider and require internet. This app saves text
+          locally and does not record audio. Let participants know before you
+          start.
+        </p>
+        <p id="support" class="notice" hidden></p>
+        <div class="current-phrase">
+          <span class="eyebrow">CURRENT PHRASE · NOT YET SAVED</span>
+          <p id="interim" aria-live="polite">
+            Words will appear here as you speak.
+          </p>
+          <button id="save-interim" type="button" hidden>
+            Save unfinished phrase
+          </button>
+        </div>
+        <div id="error-box" class="error-box" role="alert" hidden>
+          <p id="error-message"></p>
+          <button id="retry" type="button" hidden>Retry saving</button>
+        </div>
+      </section>
+      <div class="content-grid">
+        <section class="transcript-panel" aria-labelledby="transcript-title">
+          <div class="section-heading">
+            <h2 id="transcript-title">2. Your saved discussion</h2>
+            <button id="download" class="text-button" type="button" disabled>
+              Download .text ↓
+            </button>
+          </div>
+          <p class="muted">
+            Finalized phrases save automatically. Existing discussion is kept.
+          </p>
+          <pre id="transcript" tabindex="0" aria-label="Saved discussion">
+Loading your notes…</pre>
+          <details id="pending-box" hidden open>
+            <summary>Unsaved words (keep this page open)</summary>
+            <pre id="pending"></pre>
+          </details>
+        </section>
+        <aside>
+          <section class="manual-panel" aria-labelledby="manual-title">
+            <h2 id="manual-title">Add a note</h2>
+            <p class="muted">
+              Type a correction, paste a transcript, or note a decision.
+            </p>
+            <label class="sr-only" for="manual">Your note</label
+            ><textarea
+              id="manual"
+              rows="6"
+              maxlength="12000"
+              placeholder="Write or paste a note here…"
+            ></textarea
+            ><button id="add-note" type="button" disabled>Save note</button>
+          </section>
+          <section class="summary-panel" aria-labelledby="summary-title">
+            <span class="eyebrow">WHEN YOU’RE READY</span>
+            <h2 id="summary-title">Turn words into notes.</h2>
+            <p>
+              Ask Codex to organize the saved discussion into key points,
+              decisions, and action items.
+            </p>
+            <button id="copy-prompt" type="button" disabled>
+              Copy Codex prompt ↗</button
+            ><label id="prompt-label" for="codex-prompt" hidden
+              >Paste this in your Codex chat</label
+            ><textarea id="codex-prompt" rows="4" readonly hidden></textarea>
+            <p id="copy-status" class="muted" role="status"></p>
+            <small
+              >Summaries run when you ask Codex. Your raw transcript stays in
+              place.</small
+            >
+          </section>
+        </aside>
+      </div>
+      <footer>
+        <span>Discussion Notes · local workspace</span
+        ><span>Times are saved in Philippine time (PHT).</span>
+      </footer>
+    </main>
+  </body>
+</html>

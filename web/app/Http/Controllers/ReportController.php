@@ -2,17 +2,43 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BranchIssueReportRequest;
 use App\Models\Cluster;
 use App\Models\Device;
 use App\Models\IncidentReport;
 use App\Models\Observation;
 use App\Services\AccessService;
+use App\Services\BranchIssueReportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class ReportController extends Controller
 {
+    public function issues(BranchIssueReportRequest $request, BranchIssueReportService $reports)
+    {
+        $input = $request->validated();
+        $report = $reports->generate($request->user(), $input);
+        if (($input['format'] ?? null) === 'csv') {
+            return response()->streamDownload(function () use ($report) {
+                $stream = fopen('php://output', 'w');
+                fwrite($stream, "\xEF\xBB\xBF");
+                fputcsv($stream, ['Report date', 'Branch', 'Cluster', 'Camera / device', 'Status', 'Status recorded on', 'No. of days offline', 'Remarks', 'Date of concern', 'Date resolved', 'Incident reference', 'Issue state']);
+                foreach ($report['rows'] as $row) {
+                    $cells = [$report['date'], $row['branch'], $row['cluster'], $row['asset_id'].' - '.$row['device'], $row['status'], $row['status_date'] ?? '', $row['days_offline'] ?? '', $row['remarks'], $row['concern_on'] ?? '', $row['resolved_on'] ?? '', $row['reference'] ?? '', $row['issue_state']];
+                    fputcsv($stream, array_map(fn ($value) => preg_match('/^\s*[=+@-]/', (string) $value) ? "'".$value : $value, $cells));
+                }
+                fclose($stream);
+            }, 'RoseWatch-Branch-Issues-'.$report['date'].'.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'private, no-store']);
+        }
+        if (($input['format'] ?? null) === 'html') {
+            return response()->view('branch-issues-report', compact('report'))->header('Cache-Control', 'private, no-store');
+        }
+
+        return Inertia::render('Reports/Issues', compact('report'))->toResponse($request)->header('Cache-Control', 'private, no-store');
+    }
+
     public function export(Request $request, AccessService $access)
     {
         $input = $request->validate([

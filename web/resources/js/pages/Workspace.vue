@@ -425,6 +425,10 @@ const selectedClusterLabel = computed(() => {
 
 const reportUrl = (format: string) =>
     `/reports/export?${new URLSearchParams({ date: props.workspace.date, format, ...scopeParameters() })}`;
+const issueReportUrl = computed(
+    () =>
+        `/reports/issues?${new URLSearchParams({ date: props.workspace.date, ...scopeParameters() })}`,
+);
 
 const metricItems = computed(() =>
     props.section === 'checklist'
@@ -1843,12 +1847,18 @@ function saveBranch() {
                     <p>
                         The full HTML report includes embedded screenshots, external ticket links
                         and current incident summaries. Open the downloaded report and use Print to
-                        save a PDF. CSV contains camera observations.
+                        save a PDF. CSV contains camera observations. Choose Branch Issues Report
+                        for offline equipment and recorded concerns only.
                     </p>
                 </div>
                 <div class="rw-inline-actions">
-                    <a
+                    <Link
                         class="rw-btn primary"
+                        :href="issueReportUrl"
+                        >Branch Issues Report</Link
+                    >
+                    <a
+                        class="rw-btn"
                         :href="reportUrl('html')"
                         >Download full report</a
                     ><a

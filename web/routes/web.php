@@ -47,6 +47,7 @@ Route::middleware(['auth', EnsureAccountActive::class, 'auth.session'])->group(f
     Route::post('/tickets/{ticket}/retry', [TicketController::class, 'retry']);
     Route::get('/tickets/external', [TicketController::class, 'index'])->middleware('throttle:30,1')->name('tickets.external');
     Route::post('/followups', [FollowupController::class, 'store']);
+    Route::get('/reports/issues', [ReportController::class, 'issues'])->name('reports.issues');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Discussion Notes"
+  short_description: "Capture dictation locally and organize discussion notes"
+  default_prompt: "Use $discussion-notes to start dictation into note.text, then organize the captured discussion when I ask."
